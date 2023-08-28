@@ -39,7 +39,12 @@ Some key features of FlowMate are:
 
 ## Installation
 
-1. Use the latest pre-built jar file from the *Releases* section
-2. Clone the repository, switch into it and run `mvn package`. The `target` folder than contains a built version of FlowMate
+### If you want to use a pre-built JAR file, follow these steps
+1. Download the latest pre-built jar file from the [Release page](https://github.com/usdAG/FlowMate/releases)
+2. Follow the steps to install an extension from JAR file here: [Installing an extension from a file](https://portswigger.net/burp/documentation/desktop/extensions/installing-extensions#installing-an-extension-from-a-file)
+
+### If you want to build it from source, follow these steps
+1. Clone the repository, switch into it and run `mvn package`. The `target` folder then contains a built version of FlowMate
+2. Follow the steps to install an extension from JAR file here: [Installing an extension from a file](https://portswigger.net/burp/documentation/desktop/extensions/installing-extensions#installing-an-extension-from-a-file)
 
 
