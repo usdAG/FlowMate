@@ -2,7 +2,9 @@
 
 ![FlowMateLogo](images/flow-mate-dark.png)
 
-Did you ever wondered how to keep all input to output correlations of a web application in mind during a pentest? With **FlowMate** you don't have to any longer. **FlowMate** is our BurpSuite extension that brings taint analysis to web applications, by tracking all parameters send to a target application and matches their occurrences in the responses. It works from a black-box or grey-box perspective not requiring any modifications to the underlying infrastructure or application itself. Furthermore, it creates a visual graph of all parameters in the background. Anytime you need to get more detailed information on a particular parameter, value or URL you can consult the built-in Neo4J browser to access the graph. With a single query in the Neo4J browser or via the built-in query view.
+Have you ever wondered how to consider all input-to-output correlations of a web application during a pentest? With **FlowMate**, you no longer have to. **FlowMate** is our BurpSuite extension designed to introduce taint analysis to web applications. It achieves this by monitoring all parameters sent to a target application and identifying their appearances in the corresponding responses.
+
+This tool operates from either a black-box or grey-box perspective, eliminating the need for any modifications to the underlying infrastructure or the application itself. Moreover, it generates a visual graph that encompasses all parameters in the background. Whenever you require more intricate insights into a specific parameter, value, or URL, you can effortlessly refer to the integrated Neo4J browser to access the graph. This can be accomplished either through a single query in the Neo4J browser or by using the provided built-in query view.
 
 ## Key Features
 Some key features of FlowMate are:
