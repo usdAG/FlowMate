@@ -24,10 +24,10 @@ Some key features of FlowMate are:
 6. Profit from the data flow graph created for you!
 
 ### What can you get from the graph?
-1. You can lookup in which locations an specific parameter you are testing reappers in the application including the near sourrounding of the match giving a first impression on which payloads might be useful for exploitation
+1. You can lookup in which locations an specific parameter you are testing reappers in the application including the near surrounding of the match giving a first impression on which payloads might be useful for exploitation
 2. You can more easily identify occurrences of a parameter in not directly visible places, such as in hidden input fields or when a value is used in resources like stylesheets or scripts for example
 3. In conjunction with the session tracking feature you can track cross-session parameter occurrences. In case of attack vectors like Cross-Site Scripting (XSS) this may lead to attacks on higher privileged accounts (privilege escalation, account takeover)
-4. If your target application consits of multiple domains, for example APIs and the actual web frontend, the graph helps to detect cross-domain occurrences of parameter matches
+4. If your target application consists of multiple domains, for example APIs and the actual web frontend, the graph helps to detect cross-domain occurrences of parameter matches
 5. You can identify unsafe behavior of the application directly from the graph. Some examples here are:
     - A user password is included in the applications sources in cleartext
     - Security enhancements such as CSRF tokens are not changed in a secure manner
@@ -35,7 +35,7 @@ Some key features of FlowMate are:
 ### General best practices
 - Enter *unique* and *long enough* values (generally more than 6 characters) when browsing an application with FlowMate enabled
 - Do not enter payloads during this phase
-- Browse all user roles and functionality availalbe
+- Browse all user roles and functionality available
 
 ## Installation
 
