@@ -1,34 +1,26 @@
 package burp;
 
+import audit.*;
 import burp.api.montoya.BurpExtension;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.extension.ExtensionUnloadingHandler;
 import burp.api.montoya.proxy.http.*;
+import controller.NoiseReductionController;
 import controller.QueryViewController;
-import model.QueryViewModel;
 import controller.SessionViewController;
-import model.SessionViewModel;
 import db.DBModel;
+import db.DeferMatching;
 import db.InitDB;
 import db.Neo4JDB;
-import gui.AuditFindingView;
-import gui.GettingStartedView;
-import gui.GuideView;
-import gui.QueryView;
-import gui.SessionView;
+import gui.*;
+import model.NoiseReductionModel;
+import model.QueryViewModel;
+import model.SessionViewModel;
 import utils.FileSystemUtil;
 import utils.Logger;
 
 import javax.swing.*;
-
-import audit.AuditFinding;
-import audit.CrossSessionAudit;
-import audit.AuditFinding.FindingSeverity;
-
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Vector;
 
 public class BurpExtender implements BurpExtension  {
 
@@ -37,19 +29,31 @@ public class BurpExtender implements BurpExtension  {
     private GettingStartedView gettingStartedView;
     private AuditFindingView auditFindingView;
     private GuideView guideView;
-
     private QueryView queryView;
     private QueryViewModel queryViewModel;
     private QueryViewController queryViewController;
     private SessionView sessionView;
     private SessionViewModel sessionViewModel;
     private SessionViewController sessionViewController;
+    private NoiseReductionView noiseReductionView;
+    private NoiseReductionModel noiseReductionModel;
+    private NoiseReductionController noiseReductionController;
     private CrossSessionAudit crossSessionAudit;
+    private CrossContentTypeAudit crossContentTypeAudit;
+    private CrossScopeAudit crossScopeAudit;
+    private HeaderMatchAudit headerMatchAudit;
+    private LongDistanceMatchAudit longDistanceMatchAudit;
+    private KeywordMatchAudit keywordMatchAudit;
+    private PropertiesHandler propertiesHandler;
+    private RegexMatcher regexMatcher;
+    private DeferMatching deferMatching;
     private HttpListener listener;
     private MontoyaApi api;
 
     public Neo4JDB neo4j;
     public static DBModel dbModel;
+    public static int historyStart;
+
     @Override
     public void initialize(MontoyaApi api) {
         this.api = api;
@@ -65,14 +69,23 @@ public class BurpExtender implements BurpExtension  {
             throw new RuntimeException(e);
         }
 
-        auditFindingView = new AuditFindingView(this.api);
+        this.auditFindingView = new AuditFindingView(this.api);
         this.crossSessionAudit = new CrossSessionAudit(this.auditFindingView);
-        this.listener = new HttpListener(api, crossSessionAudit);
+        this.crossContentTypeAudit = new CrossContentTypeAudit(this.auditFindingView);
+        this.crossScopeAudit = new CrossScopeAudit(this.auditFindingView);
+        this.headerMatchAudit = new HeaderMatchAudit(this.auditFindingView);
+        this.longDistanceMatchAudit = new LongDistanceMatchAudit(this.auditFindingView, this.api);
+        this.keywordMatchAudit = new KeywordMatchAudit(this.auditFindingView);
+        this.propertiesHandler = new PropertiesHandler(this.api);
+        this.regexMatcher = new RegexMatcher(this.propertiesHandler);
+        this.listener = new HttpListener(api, crossSessionAudit, crossContentTypeAudit, crossScopeAudit, headerMatchAudit, longDistanceMatchAudit, keywordMatchAudit);
+        this.deferMatching = new DeferMatching(this.api, this.listener.respParser, this.listener.parameterHandler, this.listener.matchHandler);
         api.http().registerHttpHandler(this.listener);
 
         //Setup UI components
-        gettingStartedView = new GettingStartedView(this.api);
-        
+        noiseReductionView = new NoiseReductionView();
+        noiseReductionModel = new NoiseReductionModel(this.propertiesHandler, this.listener.matchHandler, this.listener.parameterHandler, this.deferMatching, this.regexMatcher);
+        noiseReductionController = new NoiseReductionController(noiseReductionView, noiseReductionModel, this.auditFindingView);
         guideView = new GuideView();
         sessionView = new SessionView(this.api, this.listener.parameterHandler, this.listener.matchHandler);
         sessionViewModel = new SessionViewModel(this.api, this.listener.parameterHandler, this.listener.matchHandler);
@@ -80,8 +93,17 @@ public class BurpExtender implements BurpExtension  {
         queryView = new QueryView(this.listener.parameterHandler, this.listener.matchHandler, this.api);
         queryViewModel = new QueryViewModel();
         queryViewController = new QueryViewController(api, queryView, queryViewModel, this.listener.parameterHandler, this.listener.matchHandler, sessionViewController);
-        
+        gettingStartedView = new GettingStartedView(this.api, this.propertiesHandler, this.deferMatching, this.listener.parameterHandler,
+                this.listener.matchHandler, this.noiseReductionController, this.queryViewController, this.auditFindingView, this.sessionViewController);
 
+        if (this.propertiesHandler.isFirstTimeLoading) {
+            historyStart = this.api.proxy().history().size() + 1;
+            this.propertiesHandler.saveHistoryStartValueInState(historyStart);
+        } else {
+            historyStart = this.propertiesHandler.loadHistoryStartValueInState();
+        }
+
+        noiseReductionController.addRuleContainerListener(queryViewController);
 
         api.extension().registerUnloadingHandler(new MyExtensionUnloadHandler());
 
@@ -137,8 +159,9 @@ public class BurpExtender implements BurpExtension  {
             {
                 tabbedPane = new JTabbedPane();
                 tabbedPane.add("Getting Started", gettingStartedView);
-                tabbedPane.add("Audit Findings", auditFindingView);
                 tabbedPane.addTab("Guides", guideView);
+                tabbedPane.add("Noise Reduction", noiseReductionView);
+                tabbedPane.add("Audit Findings", auditFindingView);
                 tabbedPane.addTab("Query", queryView);
                 tabbedPane.add("Sessions", sessionView);
 

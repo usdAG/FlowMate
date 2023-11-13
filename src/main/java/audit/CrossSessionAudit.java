@@ -1,13 +1,10 @@
 package audit;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Vector;
-
-import audit.AuditFinding.FindingSeverity;
 import db.MatchHelperClass;
 import db.entities.ParameterMatch;
 import gui.AuditFindingView;
+
+import java.util.Vector;
 
 public class CrossSessionAudit {
     

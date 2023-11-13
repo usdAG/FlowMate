@@ -1,5 +1,6 @@
 package burp;
 
+import audit.*;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.core.ToolType;
 import burp.api.montoya.http.handler.*;
@@ -8,22 +9,22 @@ import controller.SessionViewController;
 import db.DBModel;
 import db.MatchHandler;
 import db.ParameterHandler;
+import db.entities.InputParameter;
 import session.SessionParameter;
 import utils.Hashing;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import audit.CrossSessionAudit;
-
 import static burp.api.montoya.http.handler.RequestToBeSentAction.continueWith;
 
 public class HttpListener implements HttpHandler {
     private HttpRequestParser reqParser;
-    private HttpResponseParser respParser;
+    public HttpResponseParser respParser;
     private MontoyaApi api;
     public static boolean detectionIsActive = false;
     public static boolean hasActiveSession = false;
+    public static boolean liveMatchingIsActive = true;
     private static List<SessionParameter> monitoredParameter;
     public ParameterHandler parameterHandler;
     public MatchHandler matchHandler;
@@ -31,12 +32,15 @@ public class HttpListener implements HttpHandler {
     private int messageId;
 
 
-    public HttpListener(MontoyaApi api, CrossSessionAudit crossSessionAuditor) {
+    public HttpListener(MontoyaApi api, CrossSessionAudit crossSessionAuditor, CrossContentTypeAudit crossContentTypeAuditor,
+                        CrossScopeAudit crossScopeAuditor, HeaderMatchAudit headerMatchAuditor, LongDistanceMatchAudit longDistanceMatchAuditor,
+                        KeywordMatchAudit keywordMatchAuditor) {
         this.api = api;
         this.reqParser = new HttpRequestParser(this.api);
         this.respParser = new HttpResponseParser(this.api);
         this.parameterHandler = new ParameterHandler();
-        this.matchHandler = new MatchHandler(this.parameterHandler, crossSessionAuditor);
+        this.matchHandler = new MatchHandler(this.parameterHandler, crossSessionAuditor, crossContentTypeAuditor,
+                crossScopeAuditor, headerMatchAuditor, longDistanceMatchAuditor, keywordMatchAuditor);
         this.messageId = 0;
         this.messageHash = "";
         monitoredParameter = new ArrayList<>();
@@ -70,7 +74,7 @@ public class HttpListener implements HttpHandler {
 
     @Override
     public ResponseReceivedAction handleHttpResponseReceived(HttpResponseReceived responseReceived) {
-        if (detectionIsActive) {
+        if (detectionIsActive && liveMatchingIsActive) {
             // Ignores the probe request as the originate from toolFlag 1024 == Burp Extender (Alternative could be by using the User-Agent header in the request)
             if (responseReceived.toolSource().isFromTool(ToolType.EXTENSIONS) || responseReceived.toolSource().isFromTool(ToolType.REPEATER))
                 return ResponseReceivedAction.continueWith(responseReceived);
@@ -84,7 +88,8 @@ public class HttpListener implements HttpHandler {
 
             var requestDomain = reqParsed.Url.getHost();
             // Searching for matching parameters
-            var newMatches = respParser.getMatches(respParsed, this.parameterHandler.getRelevant(requestDomain), messageHash);
+            List<InputParameter> noiseReeducatedParameters = RegexMatcher.excludeParameters(this.parameterHandler.getRelevant(requestDomain));
+            var newMatches = respParser.getMatches(respParsed, noiseReeducatedParameters, messageHash);
             List<Object> matchesList = matchHandler.addMatches(newMatches);
             DBModel.saveBulk(matchesList);
 
@@ -112,7 +117,6 @@ public class HttpListener implements HttpHandler {
            }
         }
         if (!changedParams.isEmpty())
-            // -1 because the method call comes from the requests-listener. Hence, the response id where the InputParameter changed is the response before this request
             SessionViewController.createSessionFromMonitor(changedParams, this.messageId);
     }
 
@@ -126,5 +130,9 @@ public class HttpListener implements HttpHandler {
 
     public static void setMonitoredParameter(List<SessionParameter> params) {
         monitoredParameter = params;
+    }
+
+    public static void setLiveMatchingIsActive(boolean isActive) {
+        liveMatchingIsActive = isActive;
     }
 }

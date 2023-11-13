@@ -1,9 +1,8 @@
 package scheduling;
 
-import javax.swing.*;
-
 import utils.Logger;
 
+import javax.swing.*;
 import java.util.concurrent.ExecutionException;
 
 final class RunnableWorker extends SwingWorker<Void, Void> {

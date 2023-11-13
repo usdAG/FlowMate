@@ -40,7 +40,7 @@ public class CrossSessionAuditFinding extends AuditFinding {
 
         FlowMate identified a <b>data flow that crosses session-boundaries</b>. When the parameter is injectable for Cross-Site Scripting, this may allow vertical or horizontal privilege escalation within the application.
         
-        This is particularily interesting if the parameter value can be modified by a low-privileged user and is subsequently displayed to a higher-privileged user.
+        This is particularly interesting if the parameter value can be modified by a low-privileged user and is subsequently displayed to a higher-privileged user.
         
         As an example, consider the username of an application that can be set by a regular user and is displayed to an administrator in context of user management.
         
@@ -63,7 +63,7 @@ public class CrossSessionAuditFinding extends AuditFinding {
             <li>Inject the payload in the input location of the parameter</li>
             <li>Check the output location whether the payload triggers or not. Refine your payload</li>
             <li>If the vulnerability is exploitable, you have likely identified a path for privilege escalation</li>
-        </ol>            
+        </ol>
         """;
 
         return htmlTemplate.replace("PARAMETER_NAME", this.parameterName).replace("SESSION_ENTERED", this.sessionEntered).replace("SESSION_FOUND", this.sessionFound);

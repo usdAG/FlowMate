@@ -13,6 +13,8 @@ public class FileSystemUtil {
 
     public static File PROPERTIES_PATH;
 
+    public static String DEFAULT_RULES_PATH =  "/default_rules.json";
+
     static {
         String tmpdir = System.getProperty("java.io.tmpdir");
         if (tmpdir == null) {

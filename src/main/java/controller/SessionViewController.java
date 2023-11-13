@@ -1,5 +1,7 @@
 package controller;
 
+import audit.CrossSessionAudit;
+import burp.BurpExtender;
 import burp.ContainerConverter;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.http.message.params.ParsedHttpParameter;
@@ -8,14 +10,12 @@ import db.CypherQueryHandler;
 import db.DBModel;
 import db.MatchHandler;
 import db.ParameterHandler;
-import db.entities.ParameterMatch;
 import db.entities.InputValue;
-import gui.*;
+import db.entities.ParameterMatch;
+import gui.SessionView;
 import gui.container.*;
 import model.SessionViewModel;
 import org.neo4j.ogm.model.Result;
-
-import audit.CrossSessionAudit;
 import session.IdentifiedSession;
 import session.Session;
 import session.SessionHelper;
@@ -29,8 +29,8 @@ import java.awt.event.ActionListener;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static model.SessionViewModel.sessionCounter;
 import static gui.SessionView.*;
+import static model.SessionViewModel.sessionCounter;
 
 public class SessionViewController implements ActionListener, ListSelectionListener {
 
@@ -364,7 +364,9 @@ public class SessionViewController implements ActionListener, ListSelectionListe
     public void setSessionSpecificParameters(String sessionName) {
         Vector<SessionParameterContainer> parameterContainerList = containerConverter.parameterToContainerSessionDef(getSessionSpecificParameters(sessionName),
                 sessionName, getParamNamesFromSessionDefList());
-        sessionSpecificParameterJList.setListData(parameterContainerList);
+        DefaultListModel<SessionParameterContainer> listModel = (DefaultListModel<SessionParameterContainer>) sessionSpecificParameterJList.getModel();
+        listModel.clear();
+        listModel.addAll(parameterContainerList);
 
         int nMatches = 0;
         for (SessionParameterContainer container: parameterContainerList) {
@@ -391,7 +393,8 @@ public class SessionViewController implements ActionListener, ListSelectionListe
 
     public void getRelevantInformationForSessionDefinition() {
         List<String> parameterNames = getParamNamesFromSessionDefList();
-        List<ProxyHttpRequestResponse> history = api.proxy().history();
+        int historySize = api.proxy().history().size();
+        List<ProxyHttpRequestResponse> history = api.proxy().history().subList(BurpExtender.historyStart, historySize);
         for (String paramName: parameterNames) {
             int id = 0;
             for (int i = 0; i < history.size(); i++) {
@@ -402,7 +405,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
                         if (history.size() - id == 1) {
                             id++;
                         }
-                        model.inputValuesFromSessionDefList.add(new InputValue(parameter.value(),"url", "type", String.valueOf(id)));
+                        model.inputValuesFromSessionDefList.add(new InputValue(parameter.value(),"url", "type", String.valueOf(id + BurpExtender.historyStart)));
                         if (!model.parameterValuesAndNames.containsKey(parameter.value())) {
                             model.parameterValuesAndNames.put(parameter.value(), paramName);
                         }
@@ -450,5 +453,22 @@ public class SessionViewController implements ActionListener, ListSelectionListe
             }
         }
         crossSessionAudit.renderFindings();
+    }
+
+    public void clearDataAndView() {
+        model.clearAllData();
+        view.clearMatchLists();
+        view.cypherQueryField.setText("");
+        view.sessionNameTextField.setText("");
+        DefaultListModel<SessionDefContainer> listModel1 = (DefaultListModel<SessionDefContainer>) sessionDefJList.getModel();
+        listModel1.clear();
+        DefaultListModel<SessionContainer> listModel2 = (DefaultListModel<SessionContainer>)  sessionJList.getModel();
+        listModel2.clear();
+        DefaultListModel<SessionParamMonitorContainer> listModel3 = (DefaultListModel<SessionParamMonitorContainer>) view.sessionParamMonitorJList.getModel();
+        listModel3.clear();
+        DefaultListModel<SessionParameterContainer> listModel4 = (DefaultListModel<SessionParameterContainer>) sessionSpecificParameterJList.getModel();
+        listModel4.clear();
+        view.revalidate();
+        view.repaint();
     }
 }

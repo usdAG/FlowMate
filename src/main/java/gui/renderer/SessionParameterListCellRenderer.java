@@ -1,7 +1,7 @@
 package gui.renderer;
 
-import gui.container.SessionParameterContainer;
 import gui.components.PaddingTextPane;
+import gui.container.SessionParameterContainer;
 
 import javax.swing.*;
 import java.awt.*;

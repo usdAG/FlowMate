@@ -1,18 +1,36 @@
 package gui;
 
+import burp.BurpExtender;
 import burp.HttpListener;
 import burp.PropertiesHandler;
 import burp.api.montoya.MontoyaApi;
+import controller.NoiseReductionController;
+import controller.QueryViewController;
+import controller.SessionViewController;
+import db.DBModel;
+import db.DeferMatching;
+import db.MatchHandler;
+import db.ParameterHandler;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 
 public class GettingStartedView extends JScrollPane {
 
     private MontoyaApi api;
-
+    private PropertiesHandler propertiesHandler;
+    private DeferMatching deferMatching;
+    private ParameterHandler parameterHandler;
+    private MatchHandler matchHandler;
+    private NoiseReductionController noiseReductionController;
+    private QueryViewController queryViewController;
+    private AuditFindingView auditFindingView;
+    private SessionViewController sessionViewController;
+    private JEditorPane correctStateHeadline;
     public static JLabel numberOfParameters = new JLabel();
     public static JLabel numberOfParameterValues = new JLabel();
     public static JLabel numberOfParameterMatches = new JLabel();
@@ -20,8 +38,22 @@ public class GettingStartedView extends JScrollPane {
     public static JLabel numberOfUrls = new JLabel();
     public static JCheckBox detectionActiveCheckbox;
 
-    public GettingStartedView(MontoyaApi api) {
+    private JButton matchButton;
+
+    private JButton purgeButton;
+
+    public GettingStartedView(MontoyaApi api, PropertiesHandler propertiesHandler, DeferMatching deferMatching,
+                              ParameterHandler parameterHandler, MatchHandler matchHandler, NoiseReductionController noiseReductionController,
+                              QueryViewController queryViewController, AuditFindingView auditFindingView, SessionViewController sessionViewController) {
         this.api = api;
+        this.propertiesHandler = propertiesHandler;
+        this.deferMatching = deferMatching;
+        this.parameterHandler = parameterHandler;
+        this.matchHandler = matchHandler;
+        this.noiseReductionController = noiseReductionController;
+        this.queryViewController = queryViewController;
+        this.auditFindingView = auditFindingView;
+        this.sessionViewController = sessionViewController;
         JPanel mainPanel = new JPanel(new MigLayout());
         mainPanel.add(renderHowToUse(), "wrap");
         mainPanel.add(renderGettingStarted());
@@ -71,7 +103,7 @@ public class GettingStartedView extends JScrollPane {
         header.setText("<html><h1>Getting Started</h1></html>");
 
         // JEditorPane because HTML in JLabels does not get rendered
-        JEditorPane correctStateHeadline = new JEditorPane();
+        correctStateHeadline = new JEditorPane();
         correctStateHeadline.setEditable(false);
         correctStateHeadline.setOpaque(true);
         correctStateHeadline.setContentType("text/html");
@@ -79,7 +111,7 @@ public class GettingStartedView extends JScrollPane {
         JLabel checkBoxHeader = new JLabel("Set Scope and check Scope-CheckBox to activate the detection");
         JCheckBox scopeSet = new JCheckBox("Is Scope set?");
 
-        detectionActiveCheckbox = new JCheckBox("Detection Activated?");
+        detectionActiveCheckbox = new JCheckBox("Parameter Detection Activated?");
         detectionActiveCheckbox.setEnabled(false);
         detectionActiveCheckbox.addActionListener(new ActionListener() {
             @Override
@@ -87,15 +119,14 @@ public class GettingStartedView extends JScrollPane {
                 HttpListener.detectionIsActive = ((JCheckBox) actionEvent.getSource()).isSelected();
             }
         });
-
-        PropertiesHandler propertiesHandler = new PropertiesHandler(this.api);
-        if (propertiesHandler.isBurpStateMatchingWithDB()) {
+        
+        if (this.propertiesHandler.isBurpStateMatchingWithDB()) {
             correctStateHeadline.setText("<html><h2 style=\"color:green\">Burp Project is Matching with Database Entries!</h2></html>");
         } else {
             correctStateHeadline.setText("<html><h2 style=\"color:red\">Burp Project is NOT Matching with Database Entries!</h2></html>");
         }
 
-        if (propertiesHandler.isScopeSet()) {
+        if (this.propertiesHandler.isScopeSet()) {
             scopeSet.setSelected(true);
             detectionActiveCheckbox.setEnabled(true);
             detectionActiveCheckbox.setSelected(true);
@@ -121,13 +152,33 @@ public class GettingStartedView extends JScrollPane {
             }
         });
 
+        JEditorPane infoLabel = new JEditorPane();
+        infoLabel.setEditable(false);
+        infoLabel.setOpaque(true);
+        infoLabel.setContentType("text/html");
+        infoLabel.setText("<html><b>Click the \"Match Now\" Button to identify Matches</b></html>");
+        matchButton = new JButton("Match Now");
+        matchButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                deferMatching.init();
+            }
+        });
+
         panel.add(header);
         panel.add(correctStateHeadline, "gapbottom 5");
         panel.add(checkBoxHeader, "gapleft 5");
         panel.add(scopeSet, "gapleft 5");
         panel.add(detectionActiveCheckbox, "gapleft 5");
 
-        panel.add(renderStatistics());
+        panel.add(renderTogglePane());
+
+        panel.add(infoLabel, "gaptop 5");
+        panel.add(matchButton, "gapleft 5");
+
+        panel.add(renderStatistics(), "wrap");
+
+        panel.add(renderDbPurgePane());
 
         return panel;
 
@@ -160,5 +211,99 @@ public class GettingStartedView extends JScrollPane {
         panel.add(numberOfUrls);
 
         return panel;
+    }
+
+    public JPanel renderTogglePane() {
+        JPanel togglePanel = new JPanel(new MigLayout("gap rel 20"));
+        JLabel label = new JLabel("Choose whether you want to match Parameters while browsing, or manually later:");
+        JToggleButton liveMatchingToggle = new JToggleButton("Live Matching");
+        JToggleButton deferredMatchingToggle = new JToggleButton("Deferred Matching");
+
+        ButtonGroup toggleButtonGroup = new ButtonGroup();
+        toggleButtonGroup.add(liveMatchingToggle);
+        toggleButtonGroup.add(deferredMatchingToggle);
+
+        toggleButtonGroup.setSelected(liveMatchingToggle.getModel(), true);
+        HttpListener.setLiveMatchingIsActive(true);
+
+        liveMatchingToggle.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent itemEvent) {
+                HttpListener.setLiveMatchingIsActive(itemEvent.getStateChange() == ItemEvent.SELECTED);
+                matchButton.setEnabled(!(itemEvent.getStateChange() == ItemEvent.SELECTED));
+            }
+        });
+
+        deferredMatchingToggle.setSelected(false);
+        matchButton.setEnabled(false);
+
+
+        togglePanel.add(label, "north, gapbottom 5");
+        togglePanel.add(liveMatchingToggle, "west, gapright 5");
+        togglePanel.add(deferredMatchingToggle, "west");
+        return togglePanel;
+    }
+
+    public JPanel renderDbPurgePane() {
+        JPanel panel = new JPanel(new MigLayout());
+
+        JEditorPane header = new JEditorPane();
+        header.setEditable(false);
+        header.setOpaque(true);
+        header.setContentType("text/html");
+        header.setText("<html><h2>Purge Database</h2></html>");
+
+        JEditorPane infoPane = new JEditorPane();
+        infoPane.setEditable(false);
+        infoPane.setOpaque(true);
+        infoPane.setContentType("text/html");
+        infoPane.setText("""
+                <html>
+                <b>Note:</b> This will delete all stored data in the database as well as all associated plugin data!
+                </html>
+                """);
+
+        this.purgeButton = new JButton("Purge Database");
+
+        this.purgeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                int selectedOption = JOptionPane.showConfirmDialog(null,
+                        "Are you sure you want to purge the current FlowMate database and all associated plugin data?",
+                        "Are you sure?",
+                        JOptionPane.YES_NO_OPTION);
+                if (selectedOption == JOptionPane.YES_OPTION) {
+                    parameterHandler.clearAllStorages();
+                    matchHandler.clearAllStorages();
+                    resetStatistics();
+                    DBModel.purgeDatabase();
+                    propertiesHandler.makeBurpStateMatchWithDB();
+                    propertiesHandler.restoreDefaultNoiseReductionRules();
+                    noiseReductionController.loadRules();
+                    queryViewController.clearParameterList();
+                    correctStateHeadline.setText("<html><h2 style=\"color:green\">Burp Project is Matching with Database Entries!</h2></html>");
+                    BurpExtender.historyStart = api.proxy().history().size() + 1;
+                    api.persistence().extensionData().setInteger("historyStart", api.proxy().history().size() + 1);
+                    auditFindingView.clearDataAndFields();
+                    sessionViewController.clearDataAndView();
+                    queryViewController.clearDataAndView();
+                }
+            }
+        });
+
+        panel.add(header, "wrap");
+        panel.add(infoPane, "wrap");
+        panel.add(this.purgeButton);
+
+
+        return panel;
+    }
+
+    private void resetStatistics() {
+        numberOfParameters.setText("0");
+        numberOfParameterValues.setText("0");
+        numberOfParameterMatches.setText("0");
+        numberOfMatchValues.setText("0");
+        numberOfUrls.setText("0");
     }
 }

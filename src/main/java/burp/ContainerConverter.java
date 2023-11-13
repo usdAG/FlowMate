@@ -4,13 +4,13 @@ import burp.api.montoya.MontoyaApi;
 import db.CypherQueryHandler;
 import db.DBModel;
 import db.MatchHandler;
+import db.entities.InputParameter;
 import db.entities.InputValue;
 import db.entities.MatchValue;
-import db.entities.InputParameter;
 import db.entities.ParameterMatch;
 import gui.container.*;
 import org.neo4j.ogm.model.Result;
-import utils.Hashing;
+import utils.MessageHashToProxyId;
 
 import java.util.*;
 
@@ -36,12 +36,16 @@ public class ContainerConverter {
                 var name = parameter.getName();
                 var type = parameter.getType();
                 Map<String, String> values = Collections.singletonMap("name", name);
-                String query = "MATCH (n:InputParameter {name: $name, type: \"%s\"})-[OCCURS_WITH_VALUE]-(o:InputValue) RETURN o".formatted(type);
+                String query = "MATCH (n:InputParameter {name: $name, type: \"%s\"})-[OCCURS_WITH_VALUE]-(m:InputValue) RETURN m".formatted(type);
                 Result result = DBModel.query(query, values);
-                List<InputValue> inputValueList = new ArrayList<>(CypherQueryHandler.getOccurrencesFromQueryResult(result));
+                List<InputValue> inputValueList = new ArrayList<>(RegexMatcher.excludeInputValues(CypherQueryHandler.getOccurrencesFromQueryResult(result)));
                 int occurrences = inputValueList.size();
                 int matches = getNumberOfMatchesForParameterName(name, type);
-                list.add(new ParameterContainer(name, type, occurrences, matches));
+                boolean excludedByNoiseReduction = parameter.isExcludedByNoiseReduction();
+                if (!inputValueList.isEmpty() && inputValueList.stream().allMatch(InputValue::isExcludedByNoiseReduction)) {
+                    excludedByNoiseReduction = true;
+                }
+                list.add(new ParameterContainer(name, type, occurrences, matches, excludedByNoiseReduction));
             }
         }
         return list;
@@ -78,7 +82,8 @@ public class ContainerConverter {
         return new Vector<>(list.stream().sorted(Comparator.comparing(SessionParameterContainer::getName)).toList());
     }
 
-    public Vector<InputParameterContainer> parameterOccurrenceToContainer(List<InputValue> occurrences){
+    public Vector<InputParameterContainer> parameterOccurrenceToContainer(List<InputValue> occurrences) {
+        occurrences = RegexMatcher.excludeInputValues(occurrences);
         var list = new Vector<InputParameterContainer>();
         List<InputValue> inputValueList = occurrences.stream().distinct().sorted(Comparator.comparing(InputValue::getMessageHash)).toList();
         List<Integer> duplicates2 = new ArrayList<>();
@@ -89,7 +94,8 @@ public class ContainerConverter {
                 var url = parameterValue.getUrl();
                 var value = parameterValue.getValue();
                 var messageHash = parameterValue.getMessageHash();
-                list.add(new InputParameterContainer(url, value, messageHash, calculateId(messageHash)));
+                var excludedByNoiseReduction = parameterValue.isExcludedByNoiseReduction();
+                list.add(new InputParameterContainer(url, value, messageHash, calculateId(messageHash), excludedByNoiseReduction));
             }
         }
         return new Vector<>(list.stream().sorted(Comparator.comparing(InputParameterContainer::getMessageId)).toList());
@@ -139,13 +145,7 @@ public class ContainerConverter {
     }
 
     private int calculateId(String messageHash) {
-        var history = this.api.proxy().history();
-        for (int i = 0; i < history.size(); i++) {
-            String proxyHash = Hashing.sha1(history.get(i).finalRequest().toByteArray().getBytes());
-            if (messageHash.equals(proxyHash)) {
-                return i + 1;
-            }
-        }
-        return -1;
+        MessageHashToProxyId messageHashToProxyId = MessageHashToProxyId.getInstance(this.api);
+        return messageHashToProxyId.calculateId(messageHash);
     }
 }

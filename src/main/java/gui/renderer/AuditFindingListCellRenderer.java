@@ -1,15 +1,10 @@
 package gui.renderer;
 
-import java.awt.Color;
-import java.awt.Component;
-
-import javax.swing.BoxLayout;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.ListCellRenderer;
-
 import audit.AuditFinding;
 import gui.components.PaddingTextPane;
+
+import javax.swing.*;
+import java.awt.*;
 
 public class AuditFindingListCellRenderer implements ListCellRenderer<AuditFinding> {
 

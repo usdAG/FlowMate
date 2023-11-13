@@ -1,0 +1,24 @@
+[
+  {
+    "name": "Ignore boolean values",
+    "regex": "^(true|false)$",
+    "affectsParameterNames": false,
+    "affectsParameterValues": true,
+    "affectsQueryString": true,
+    "affectsBody": true,
+    "affectsCookie": true,
+    "active": false,
+    "caseInsensitive": true
+  },
+  {
+    "name": "Ignore small numbers (0-999)",
+    "regex": "^(0|[1-9]\\d{0,2})$",
+    "affectsParameterNames": false,
+    "affectsParameterValues": true,
+    "affectsQueryString": true,
+    "affectsBody": true,
+    "affectsCookie": true,
+    "active": false,
+    "caseInsensitive": false
+  }
+]

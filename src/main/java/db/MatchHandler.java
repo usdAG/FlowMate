@@ -1,5 +1,6 @@
 package db;
 
+import audit.*;
 import db.entities.MatchValue;
 import db.entities.ParameterMatch;
 import db.entities.Url;
@@ -8,8 +9,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 import java.util.*;
-
-import audit.CrossSessionAudit;
 
 // Handles the logic behind new-found matches
 public class MatchHandler {
@@ -22,14 +21,26 @@ public class MatchHandler {
     private boolean hasActiveSession = false;
     private String sessionName;
     private CrossSessionAudit crossSessionAudit;
+    private CrossContentTypeAudit crossContentTypeAudit;
+    private CrossScopeAudit crossScopeAudit;
+    private HeaderMatchAudit headerMatchAudit;
+    private LongDistanceMatchAudit longDistanceMatchAudit;
+    private KeywordMatchAudit keywordMatchAudit;
 
-    public MatchHandler(ParameterHandler parameterHandler, CrossSessionAudit crossSessionAudit) {
+    public MatchHandler(ParameterHandler parameterHandler, CrossSessionAudit crossSessionAudit, CrossContentTypeAudit crossContentTypeAudit,
+                        CrossScopeAudit crossScopeAudit, HeaderMatchAudit headerMatchAudit, LongDistanceMatchAudit longDistanceMatchAudit,
+                        KeywordMatchAudit keywordMatchAudit) {
         this.matchValueStorage = new Hashtable<>();
         this.parameterMatchStorage = new Hashtable<>();
         this.parameterHandler = parameterHandler;
         this.observableParameterMatchList = FXCollections.observableArrayList();
         this.observableParameterMatchListSession = FXCollections.observableArrayList();
         this.crossSessionAudit = crossSessionAudit;
+        this.crossContentTypeAudit = crossContentTypeAudit;
+        this.crossScopeAudit = crossScopeAudit;
+        this.headerMatchAudit = headerMatchAudit;
+        this.longDistanceMatchAudit = longDistanceMatchAudit;
+        this.keywordMatchAudit = keywordMatchAudit;
         loadEntities();
     }
 
@@ -83,6 +94,11 @@ public class MatchHandler {
         newParameterMatchEntity.addMatchEntryEntity(newMatchValueEntity);
 
         this.crossSessionAudit.performAudit(newParameterMatchEntity, this.sessionName, match);
+        this.crossContentTypeAudit.performAudit(match);
+        this.crossScopeAudit.performAudit(match);
+        this.headerMatchAudit.performAudit(match);
+        this.keywordMatchAudit.performAudit(match);
+        this.longDistanceMatchAudit.performAudit(match, newMatchValueEntity, this);
 
         Url matchingUrlEntity = getMatchingUrlEntity(url);
 
@@ -125,7 +141,7 @@ public class MatchHandler {
         return this.matchValueStorage.containsKey(identifier);
     }
 
-    private boolean matchEntityExistsInUrlEntity(Url urlEntity, String name, String value) {
+    public boolean matchEntityExistsInUrlEntity(Url urlEntity, String name, String value) {
         int identifier = Objects.hash(name, value, urlEntity.getUrl());
         if (hasActiveSession) {
             identifier = Objects.hash(name, value, urlEntity.getUrl(), this.sessionName);
@@ -142,7 +158,7 @@ public class MatchHandler {
         return parameterMatchStorage.get(identifier);
     }
 
-    private Url getMatchingUrlEntity(String url) {
+    public Url getMatchingUrlEntity(String url) {
         Hashtable<Integer, Url> urlEntityStorage = parameterHandler.getUrlStorage();
         int identifier = Objects.hash(url);
         return urlEntityStorage.get(identifier);
@@ -154,5 +170,12 @@ public class MatchHandler {
 
     public void setSessionName(String sessionName) {
         this.sessionName = sessionName;
+    }
+
+    public void clearAllStorages() {
+        matchValueStorage.clear();
+        parameterMatchStorage.clear();
+        observableParameterMatchList.clear();
+        observableParameterMatchListSession.clear();
     }
 }

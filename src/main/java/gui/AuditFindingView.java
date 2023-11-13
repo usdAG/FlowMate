@@ -1,20 +1,18 @@
 package gui;
 
+import audit.AuditFinding;
+import burp.api.montoya.MontoyaApi;
+import gui.renderer.AuditFindingListCellRenderer;
+import net.miginfocom.swing.MigLayout;
+
+import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Vector;
-
-import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-
-import audit.AuditFinding;
-import burp.api.montoya.MontoyaApi;
-import burp.api.montoya.scanner.audit.Audit;
-import gui.renderer.AuditFindingListCellRenderer;
-import net.miginfocom.swing.MigLayout;
 
 public class AuditFindingView extends JScrollPane {
     
@@ -70,8 +68,8 @@ public class AuditFindingView extends JScrollPane {
     }
 
     public void addFinding(AuditFinding finding){
-        if (!this.duplicates.contains(Objects.hash(finding.getShortDescription()))) {
-            this.duplicates.add(Objects.hash(finding.getShortDescription()));
+        if (!this.duplicates.contains(Objects.hash(finding.getShortDescription(), finding.getLongDescription()))) {
+            this.duplicates.add(Objects.hash(finding.getShortDescription(), finding.getLongDescription()));
             this.findings.add(finding);
         }
     }
@@ -93,5 +91,17 @@ public class AuditFindingView extends JScrollPane {
     public void setAuditFindings(List<AuditFinding> list){
         this.findings.clear();
         this.addFinding(list);
+    }
+
+    private void clearDescriptionPane() {
+        this.desccriptionPane.setText("");
+        this.panel.revalidate();
+        this.panel.repaint();
+    }
+
+    public void clearDataAndFields() {
+        this.setAuditFindings(new ArrayList<>());
+        this.clearDescriptionPane();
+        this.duplicates.clear();
     }
 }

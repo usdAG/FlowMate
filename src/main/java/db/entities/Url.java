@@ -63,6 +63,10 @@ public class Url {
         return identifier;
     }
 
+    public void setFound(List<ParameterMatch> found) {
+        this.found = found;
+    }
+
     @Override
     public String toString() {
         return "Url{" +

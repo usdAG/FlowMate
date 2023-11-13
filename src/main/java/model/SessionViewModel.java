@@ -256,4 +256,12 @@ public class SessionViewModel {
     public void setSelectedSessionIndex(int index) {
         this.selectedSessionIndex = index;
     }
+
+    public void clearAllData() {
+        parameterValuesAndNames.clear();
+        helpers.clear();
+        inputValuesFromSessionDefList.clear();
+        sessionCounter = 0;
+        sessionTable.clear();
+    }
 }

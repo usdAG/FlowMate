@@ -1,5 +1,6 @@
 package db;
 
+import burp.RegexMatcher;
 import db.entities.InputParameter;
 import db.entities.InputValue;
 import db.entities.Url;
@@ -31,6 +32,7 @@ public class ParameterHandler {
         loadUrls();
         loadParameters();
         loadParameterOccurrences();
+        this.observableInputParameterList = FXCollections.observableArrayList(RegexMatcher.excludeParameters(observableInputParameterList));
     }
 
     public void loadUrls() {
@@ -200,6 +202,24 @@ public class ParameterHandler {
 
     public void setSessionName(String sessionName) {
         this.sessionName = sessionName;
+    }
+
+    public void clearAllMatchRelatedObjectsFromStorage() {
+        for (Url url : urlStorage.values()) {
+            url.setFound(new ArrayList<>());
+        }
+    }
+
+    public void clearAllStorages() {
+        parameterStorage.clear();
+        parameterValueStorage.clear();
+        urlStorage.clear();
+        observableInputParameterList.clear();
+        observableInputParameterListSession.clear();
+    }
+
+    public void updateParameterExclusion() {
+        this.observableInputParameterList = FXCollections.observableArrayList(RegexMatcher.excludeParameters(this.observableInputParameterList));
     }
 }
 

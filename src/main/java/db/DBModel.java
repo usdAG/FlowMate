@@ -2,15 +2,16 @@ package db;
 
 import db.entities.*;
 import gui.GettingStartedView;
-import utils.Logger;
-
 import org.neo4j.ogm.config.Configuration;
 import org.neo4j.ogm.model.Result;
 import org.neo4j.ogm.session.Session;
 import org.neo4j.ogm.session.SessionFactory;
 import org.neo4j.ogm.transaction.Transaction;
+import utils.Logger;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 // "Connects" the java driver with the running neo4j db
 // Used to interact with the database
@@ -129,6 +130,15 @@ public class DBModel {
         Session session = sessionFactory.openSession();
         try (Transaction tx = session.beginTransaction()) {
             session.save(entities);
+            tx.commit();
+        }
+        session.clear();
+    }
+
+    public static void purgeDatabase() {
+        Session session = sessionFactory.openSession();
+        try (Transaction tx = session.beginTransaction()) {
+            session.purgeDatabase();
             tx.commit();
         }
         session.clear();

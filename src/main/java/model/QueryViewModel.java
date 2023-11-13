@@ -53,4 +53,10 @@ public class QueryViewModel {
             }
         }
     }
+
+    public void clearAllData() {
+        this.matchValueEntityList.clear();
+        this.parameterMatchEntityList.clear();
+        this.occurrenceEntityList.clear();
+    }
 }

@@ -9,12 +9,14 @@ public class InputParameterContainer {
 
     private String messageHash;
     private int messageId;
+    private boolean excludedByNoiseReduction;
 
-    public InputParameterContainer(String url, String value, String messageHash, int messageId){
+    public InputParameterContainer(String url, String value, String messageHash, int messageId, boolean excludedByNoiseReduction){
         this.url = url;
         this.value = value;
         this.messageHash = messageHash;
         this.messageId = messageId;
+        this.excludedByNoiseReduction = excludedByNoiseReduction;
     }
 
     public String getLabelRepresentation(){
@@ -42,5 +44,13 @@ public class InputParameterContainer {
 
     public int getMessageId() {
         return messageId;
+    }
+
+    public boolean isExcludedByNoiseReduction() {
+        return excludedByNoiseReduction;
+    }
+
+    public void setExcludedByNoiseReduction(boolean excludedByNoiseReduction) {
+        this.excludedByNoiseReduction = excludedByNoiseReduction;
     }
 }

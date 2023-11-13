@@ -1,7 +1,7 @@
 package db;
 
-import db.entities.ParameterMatch;
 import db.entities.InputValue;
+import db.entities.ParameterMatch;
 import org.neo4j.ogm.model.Result;
 
 import java.util.ArrayList;
@@ -9,7 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-// Helper Class that stores some Cypher Queries and helps to retrieve List Objects from a query result
+// Helper Class that helps to retrieve List Objects from a query result
 public class CypherQueryHandler {
 
     public static List<InputValue> getOccurrencesFromQueryResult(Result queryResult) {

@@ -1,22 +1,30 @@
 package burp;
 
 import burp.api.montoya.MontoyaApi;
+import burp.api.montoya.persistence.PersistedList;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import gui.container.RuleContainer;
 import utils.FileSystemUtil;
 import utils.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
-import java.util.List;
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
 
 public class PropertiesHandler {
 
     private MontoyaApi api;
 
+    public boolean isFirstTimeLoading;
+    private boolean isMatching;
+
     public PropertiesHandler(MontoyaApi api) {
         this.api = api;
+        this.isFirstTimeLoading = false;
+        this.isMatching = false;
     }
 
     /*
@@ -37,6 +45,8 @@ public class PropertiesHandler {
                 propertiesFile.createNewFile();
                 Files.writeString(propertiesFile.toPath(), "IsRightState:" + hashed);
                 Logger.getInstance().logToOutput("Saved new Hash in Burp State + " + propertiesFile.toPath());
+                this.isFirstTimeLoading = true;
+                this.isMatching = true;
                 return true;
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -47,6 +57,7 @@ public class PropertiesHandler {
                 propertiesFile.createNewFile();
                 Files.writeString(propertiesFile.toPath(), "IsRightState:" + savedKey);
                 Logger.getInstance().logToOutput(String.format("Database is empty but Burp State is not. Saved Burp State Hash in %s\n To ensure proper working of the extension Create a new Burp Project", propertiesFile.toPath()));
+                this.isMatching = false;
                 return false;
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -58,6 +69,8 @@ public class PropertiesHandler {
                 propertiesFile.createNewFile();
                 Files.writeString(propertiesFile.toPath(), "IsRightState:" + hashed);
                 Logger.getInstance().logToOutput("Saved new Hash in Burp State + " + propertiesFile.toPath());
+                this.isFirstTimeLoading = true;
+                this.isMatching = true;
                 return true;
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -69,6 +82,7 @@ public class PropertiesHandler {
                 Logger.getInstance().logToOutput("Saved in Properties file: " + path);
                 String savedHash = this.api.persistence().extensionData().getString("IsRightState");
                 String cutHash = prop.get(0).split(":")[1];
+                this.isMatching = cutHash.equals(savedHash);
                 return cutHash.equals(savedHash);
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -87,4 +101,106 @@ public class PropertiesHandler {
     public void setScopeKeyInBurpState(String scope) {
         this.api.persistence().extensionData().setString("isScopeSet", scope);
     }
+
+    /*
+    * Rules are being saved as:
+    * Key: hash of name, regex, affectsParameterNames, affectsParameterValues, affectsHeader, affectsBody, affectsCookie, active, caseSensitive
+    * Value: RuleContainer as List<String>
+    */
+    public void saveNoiseReductionRule(RuleContainer ruleContainer) {
+        // List order of Elements is name, regex, affectsParameterNames, affectsParameterValues,
+        // affectsHeader, affectsBody, affectsCookie, active, caseSensitive, hash
+        PersistedList<String> ruleAsList = ruleContainer.toPersistedList();
+        this.api.persistence().extensionData().setStringList(ruleContainer.getHash(), ruleAsList);
+    }
+
+    public void updateNoiseReductionRule(RuleContainer ruleContainer, String oldRuleHash) {
+        PersistedList<String> newRuleAsList = ruleContainer.toPersistedList();
+        this.api.persistence().extensionData().deleteStringList(oldRuleHash);
+        this.api.persistence().extensionData().setStringList(ruleContainer.getHash(), newRuleAsList);
+    }
+
+    public void deleteNoiseReductionRule(RuleContainer ruleContainer) {
+        this.api.persistence().extensionData().deleteStringList(ruleContainer.getHash());
+    }
+
+    public List<RuleContainer> loadNoiseReductionRules() {
+        Set<String> keys = this.api.persistence().extensionData().stringListKeys();
+        List<RuleContainer> rules = new ArrayList<>();
+        for (String key : keys) {
+            List<String> rule = this.api.persistence().extensionData().getStringList(key);
+            // List order of Elements is name, regex, affectsParameterNames, affectsParameterValues,
+            // affectsHeader, affectsBody, affectsCookie, active, caseSensitive, hash (10 Elements)
+            String name = rule.get(0);
+            String regex = rule.get(1);
+            boolean affectsParameterNames = Boolean.parseBoolean(rule.get(2));
+            boolean affectsParameterValues = Boolean.parseBoolean(rule.get(3));
+            boolean affectsHeader = Boolean.parseBoolean(rule.get(4));
+            boolean affectsBody = Boolean.parseBoolean(rule.get(5));
+            boolean affectsCookie = Boolean.parseBoolean(rule.get(6));
+            boolean active = Boolean.parseBoolean(rule.get(7));
+            boolean caseInsensitive = Boolean.parseBoolean(rule.get(8));
+            RuleContainer ruleContainer = new RuleContainer(name, regex, affectsParameterNames,
+                    affectsParameterValues, affectsHeader, affectsBody, affectsCookie, active, caseInsensitive);
+            rules.add(ruleContainer);
+        }
+        return rules;
+    }
+
+    public void setDefaultRulesOnFirstLoad() {
+        if (isFirstTimeLoading) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            this.isFirstTimeLoading = false;
+            try {
+                String filepath = FileSystemUtil.DEFAULT_RULES_PATH;
+                URL fileUrl = this.getClass().getResource(filepath);
+                List<RuleContainer> ruleContainers = objectMapper.readValue(fileUrl, new TypeReference<List<RuleContainer>>() {
+                });
+                for (RuleContainer rule : ruleContainers) {
+                    saveNoiseReductionRule(rule);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    public void restoreDefaultNoiseReductionRules() {
+        this.isFirstTimeLoading = true;
+        Set<String> keys = this.api.persistence().extensionData().stringListKeys();
+        for (String key : keys) {
+            this.api.persistence().extensionData().deleteStringList(key);
+        }
+        setDefaultRulesOnFirstLoad();
+        this.isFirstTimeLoading = false;
+    }
+
+    public void makeBurpStateMatchWithDB() {
+        if (!isMatching) {
+            File propertiesFile = FileSystemUtil.PROPERTIES_PATH;
+            long randomLong = new Random().nextLong();
+            String hashed = String.valueOf(Objects.hash(randomLong));
+            if (propertiesFile.exists()) {
+                propertiesFile.delete();
+            }
+            try {
+                propertiesFile.createNewFile();
+                Files.writeString(propertiesFile.toPath(), "IsRightState:" + hashed);
+                this.api.persistence().extensionData().setString("IsRightState", hashed);
+                Logger.getInstance().logToOutput("Saved new Hash in Burp State + " + propertiesFile.toPath());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            this.isMatching = true;
+        }
+    }
+
+    public void saveHistoryStartValueInState(int historyStart) {
+        this.api.persistence().extensionData().setInteger("historyStart", historyStart);
+    }
+
+    public int loadHistoryStartValueInState() {
+        var size = this.api.persistence().extensionData().getInteger("historyStart");
+        return Objects.requireNonNullElse(size, 0);
+    }
+
 }
