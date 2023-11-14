@@ -65,6 +65,7 @@ public class NoiseReductionController implements ActionListener, ListSelectionLi
                 RuleContainer selectedRuleContainer = view.ruleList.getSelectedValue();
                 listModel.removeElement(selectedRuleContainer);
                 model.deleteRuleInState(selectedRuleContainer);
+                fireRuleContainerChanged(selectedRuleContainer);
                 clearAllTextFields();
                 clearAllCheckBoxes();
             }
