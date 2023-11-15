@@ -38,7 +38,7 @@ public class ContainerConverter {
                 Map<String, String> values = Collections.singletonMap("name", name);
                 String query = "MATCH (n:InputParameter {name: $name, type: \"%s\"})-[OCCURS_WITH_VALUE]-(m:InputValue) RETURN m".formatted(type);
                 Result result = DBModel.query(query, values);
-                List<InputValue> inputValueList = new ArrayList<>(RegexMatcher.excludeInputValues(CypherQueryHandler.getOccurrencesFromQueryResult(result)));
+                List<InputValue> inputValueList = new ArrayList<>(CypherQueryHandler.getOccurrencesFromQueryResult(result));
                 int occurrences = inputValueList.size();
                 int matches = getNumberOfMatchesForParameterName(name, type);
                 boolean excludedByNoiseReduction = parameter.isExcludedByNoiseReduction();
@@ -83,7 +83,6 @@ public class ContainerConverter {
     }
 
     public Vector<InputParameterContainer> parameterOccurrenceToContainer(List<InputValue> occurrences) {
-        occurrences = RegexMatcher.excludeInputValues(occurrences);
         var list = new Vector<InputParameterContainer>();
         List<InputValue> inputValueList = occurrences.stream().distinct().sorted(Comparator.comparing(InputValue::getMessageHash)).toList();
         List<Integer> duplicates2 = new ArrayList<>();

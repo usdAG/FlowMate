@@ -18,7 +18,6 @@ public class InputParameter {
     private String type;
     private String domain;
 
-    @Transient
     private boolean excludedByNoiseReduction;
 
     @Relationship(type = "OCCURS_WITH_VALUE", direction = Relationship.Direction.OUTGOING)

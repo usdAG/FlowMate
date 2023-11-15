@@ -101,7 +101,7 @@ public class DeferMatching implements PropertyChangeListener {
             try {
                 int historySize = api.proxy().history().size();
                 var proxyList = api.proxy().history().subList(BurpExtender.historyStart, historySize);
-                List<InputParameter> allInputParameters = pHandler.parameterStorage.values().stream().toList();
+                List<InputParameter> allInputParameters = pHandler.observableInputParameterList;
                 List<Object> allMatches = new ArrayList<>();
                 Set<Integer> duplicateIdentifiers = new HashSet<>();
                 Set<String> messageHashes = new HashSet<>();
@@ -124,6 +124,7 @@ public class DeferMatching implements PropertyChangeListener {
 
                     for (InputParameter parameter : allInputParameters) {
                         InputParameter realParam = new InputParameter(parameter.getName(), parameter.getType(), parameter.getDomain());
+                        realParam.setExcludedByNoiseReduction(parameter.isExcludedByNoiseReduction());
                         if (inputParamIdentifiers.contains(parameter.getIdentifier())) {
                             realParam = inputParametersMatchingToHistory.stream().filter(e -> e.getIdentifier() == parameter.getIdentifier()).findFirst().get();
                         }
@@ -141,8 +142,7 @@ public class DeferMatching implements PropertyChangeListener {
                             inputParamIdentifiers.add(realParam.getIdentifier());
                         }
                     }
-                    List<InputParameter> noiseReducedParams = RegexMatcher.excludeParameters(inputParametersMatchingToHistory);
-                    List<MatchHelperClass> respMatch = parser.getMatches(response, noiseReducedParams, hash);
+                    List<MatchHelperClass> respMatch = parser.getMatches(response, inputParametersMatchingToHistory, hash);
                     List<Object> realMatches = matchHandler.addMatches(respMatch);
                     for (Object realMatch : realMatches) {
                         int identifier = -1;

@@ -135,6 +135,15 @@ public class DBModel {
         session.clear();
     }
 
+    public static void saveBulkParameters(List<InputParameter> entities) {
+        Session session = sessionFactory.openSession();
+        try (Transaction tx = session.beginTransaction()) {
+            session.save(entities);
+            tx.commit();
+        }
+        session.clear();
+    }
+
     public static void purgeDatabase() {
         Session session = sessionFactory.openSession();
         try (Transaction tx = session.beginTransaction()) {

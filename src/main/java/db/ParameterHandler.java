@@ -5,6 +5,7 @@ import db.entities.InputParameter;
 import db.entities.InputValue;
 import db.entities.Url;
 import gui.GettingStartedView;
+import gui.container.RuleContainer;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
@@ -32,7 +33,6 @@ public class ParameterHandler {
         loadUrls();
         loadParameters();
         loadParameterOccurrences();
-        this.observableInputParameterList = FXCollections.observableArrayList(RegexMatcher.excludeParameters(observableInputParameterList));
     }
 
     public void loadUrls() {
@@ -101,6 +101,8 @@ public class ParameterHandler {
         if (this.hasActiveSession) {
             newInputValue = new InputValue(parameterHelper.getValue(), url, type, messageHash, this.sessionName);
         }
+        RegexMatcher.excludeParameter(newInputParameterEntity);
+        RegexMatcher.excludeInputValues(newInputValue);
 
         // Check if the URL Entity already exists in the DB
         // If not, add it to the list of known Urls and save the Url + InputParameter in the DB
@@ -218,8 +220,8 @@ public class ParameterHandler {
         observableInputParameterListSession.clear();
     }
 
-    public void updateParameterExclusion() {
-        this.observableInputParameterList = FXCollections.observableArrayList(RegexMatcher.excludeParameters(this.observableInputParameterList));
+    public void updateParameterExclusion(RuleContainer ruleContainer) {
+        RegexMatcher.excludeParametersForSingleRule(this.observableInputParameterList, ruleContainer);
     }
 }
 

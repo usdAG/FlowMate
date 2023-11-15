@@ -1,7 +1,9 @@
 package controller;
 
 import burp.ContainerConverter;
+import burp.RegexMatcher;
 import burp.api.montoya.MontoyaApi;
+import db.DBModel;
 import db.MatchHandler;
 import db.ParameterHandler;
 import db.entities.InputParameter;
@@ -321,7 +323,12 @@ public class QueryViewController implements ActionListener, ListSelectionListene
 
     @Override
     public void onRuleChangeEvent(RuleContainerEvent event) {
-        this.parameterHandler.updateParameterExclusion();
+        RuleContainer ruleContainer = event.getRuleContainer();
+        if (event.isDeleteAction()) {
+            ruleContainer.setActive(false);
+        }
+        this.parameterHandler.updateParameterExclusion(ruleContainer);
+        DBModel.saveBulkParameters(this.parameterHandler.observableInputParameterList);
         updateParameters();
     }
 

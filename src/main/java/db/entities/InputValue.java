@@ -20,7 +20,6 @@ public class InputValue {
 
     private String type;
 
-    @Transient
     private boolean excludedByNoiseReduction;
 
     // Empty Constructor needed for neo4J

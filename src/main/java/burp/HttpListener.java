@@ -88,7 +88,7 @@ public class HttpListener implements HttpHandler {
 
             var requestDomain = reqParsed.Url.getHost();
             // Searching for matching parameters
-            List<InputParameter> noiseReeducatedParameters = RegexMatcher.excludeParameters(this.parameterHandler.getRelevant(requestDomain));
+            List<InputParameter> noiseReeducatedParameters = this.parameterHandler.getRelevant(requestDomain);
             var newMatches = respParser.getMatches(respParsed, noiseReeducatedParameters, messageHash);
             List<Object> matchesList = matchHandler.addMatches(newMatches);
             DBModel.saveBulk(matchesList);

@@ -65,7 +65,7 @@ public class NoiseReductionController implements ActionListener, ListSelectionLi
                 RuleContainer selectedRuleContainer = view.ruleList.getSelectedValue();
                 listModel.removeElement(selectedRuleContainer);
                 model.deleteRuleInState(selectedRuleContainer);
-                fireRuleContainerChanged(selectedRuleContainer);
+                fireRuleContainerChanged(selectedRuleContainer, true);
                 clearAllTextFields();
                 clearAllCheckBoxes();
             }
@@ -171,7 +171,7 @@ public class NoiseReductionController implements ActionListener, ListSelectionLi
             ruleContainer.updateValues(name, regex, affectsParamName, affectsParamValue, affectsHeader, affectsBody, affectsCookie, active, caseInsensitive);
             model.updateRuleInState(ruleContainer, oldRuleHash);
             updateListPanel();
-            fireRuleContainerChanged(ruleContainer);
+            fireRuleContainerChanged(ruleContainer, false);
         }
     }
 
@@ -181,7 +181,7 @@ public class NoiseReductionController implements ActionListener, ListSelectionLi
         RuleContainer ruleContainer = model.addRule(name, regex, affectsParamName, affectsParamValue, affectsHeader, affectsBody, affectsCookie, active, caseInsensitive);
         ruleListModel.addElement(ruleContainer);
         model.saveRuleInState(ruleContainer);
-        fireRuleContainerChanged(ruleContainer);
+        fireRuleContainerChanged(ruleContainer, false);
     }
 
     private void updateActiveStatus(boolean active) {
@@ -192,7 +192,7 @@ public class NoiseReductionController implements ActionListener, ListSelectionLi
             ruleContainer.setActive(active);
             model.updateRuleInState(ruleContainer, oldRuleHash);
             updateListPanel();
-            fireRuleContainerChanged(ruleContainer);
+            fireRuleContainerChanged(ruleContainer, false);
         }
     }
 
@@ -209,8 +209,8 @@ public class NoiseReductionController implements ActionListener, ListSelectionLi
         this.listeners.remove(listener);
     }
 
-    private void fireRuleContainerChanged(RuleContainer ruleContainer) {
-        RuleContainerEvent event = new RuleContainerEvent(this, ruleContainer);
+    private void fireRuleContainerChanged(RuleContainer ruleContainer, boolean deleteAction) {
+        RuleContainerEvent event = new RuleContainerEvent(this, ruleContainer, deleteAction);
         for (RuleContainerListener listener : this.listeners) {
             listener.onRuleChangeEvent(event);
         }
