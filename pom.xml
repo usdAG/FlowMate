@@ -47,40 +47,40 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-bolt</artifactId>
-            <version>5.5.0</version>
+            <version>5.13.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.neo4j/neo4j -->
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j</artifactId>
-            <version>5.5.0</version>
+            <version>5.13.0</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-ogm-core</artifactId>
-            <version>4.0.3</version>
+            <version>4.0.8</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-ogm-bolt-driver</artifactId>
-            <version>4.0.3</version>
+            <version>4.0.8</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.neo4j.client/neo4j-browser -->
         <dependency>
             <groupId>org.neo4j.client</groupId>
             <artifactId>neo4j-browser</artifactId>
-            <version>5.4.0</version>
+            <version>5.12.0</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j.app</groupId>
             <artifactId>neo4j-server</artifactId>
-            <version>5.5.0</version>
+            <version>5.13.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.neo4j/neo4j-native -->
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-native</artifactId>
-            <version>5.5.0</version>
+            <version>5.13.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.jsoup/jsoup -->
         <dependency>
