@@ -104,6 +104,7 @@ public class BurpExtender implements BurpExtension  {
         }
 
         noiseReductionController.addRuleContainerListener(queryViewController);
+        deferMatching.addDeferMatchingFinishedListener(sessionViewController);
 
         api.extension().registerUnloadingHandler(new MyExtensionUnloadHandler());
 

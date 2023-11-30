@@ -10,7 +10,7 @@ import db.DBModel;
 import db.MatchHandler;
 import db.ParameterHandler;
 import db.entities.InputParameter;
-import session.SessionParameter;
+import db.entities.SessionParameter;
 import utils.Hashing;
 
 import java.util.ArrayList;

@@ -3,11 +3,14 @@ package db;
 import burp.RegexMatcher;
 import db.entities.InputParameter;
 import db.entities.InputValue;
+import db.entities.Session;
 import db.entities.Url;
 import gui.GettingStartedView;
 import gui.container.RuleContainer;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import model.SessionViewModel;
+import org.neo4j.ogm.model.Result;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -100,6 +103,12 @@ public class ParameterHandler {
         InputValue newInputValue = new InputValue(parameterHelper.getValue(), url, type, messageHash);
         if (this.hasActiveSession) {
             newInputValue = new InputValue(parameterHelper.getValue(), url, type, messageHash, this.sessionName);
+            Session session = SessionViewModel.sessionTable.get(this.sessionName);
+            if (session != null) {
+                session.addInputValue(newInputValue);
+                DBModel.saveSession(session);
+                SessionViewModel.sessionTable.put(this.sessionName, session);
+            }
         }
         RegexMatcher.excludeParameter(newInputParameterEntity);
         RegexMatcher.excludeInputValues(newInputValue);

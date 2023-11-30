@@ -1,12 +1,16 @@
 package db;
 
 import audit.*;
+import controller.SessionViewController;
 import db.entities.MatchValue;
 import db.entities.ParameterMatch;
+import db.entities.Session;
 import db.entities.Url;
 import gui.GettingStartedView;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import model.SessionViewModel;
+import org.neo4j.ogm.model.Result;
 
 import java.util.*;
 
@@ -87,13 +91,19 @@ public class MatchHandler {
 
         ParameterMatch newParameterMatchEntity = new ParameterMatch(name, value, type, messageHash, url, match.getInputValueObj());
         MatchValue newMatchValueEntity = new MatchValue(name, value, responseContentType, matchProof, url, messageHash);
+
+        Session session = null;
+
         if (hasActiveSession) {
             newParameterMatchEntity = new ParameterMatch(name, value, type, messageHash, url, this.sessionName, match.getInputValueObj());
             newMatchValueEntity = new MatchValue(name, value, responseContentType, matchProof, url, messageHash, this.sessionName);
+
+            session = SessionViewModel.sessionTable.get(this.sessionName);
+            this.crossSessionAudit.performAudit(newParameterMatchEntity, this.sessionName, match);
         }
+
         newParameterMatchEntity.addMatchEntryEntity(newMatchValueEntity);
 
-        this.crossSessionAudit.performAudit(newParameterMatchEntity, this.sessionName, match);
         this.crossContentTypeAudit.performAudit(match);
         this.crossScopeAudit.performAudit(match);
         this.headerMatchAudit.performAudit(match);
@@ -109,15 +119,30 @@ public class MatchHandler {
                 this.matchValueStorage.put(newMatchValueEntity.getIdentifier(), newMatchValueEntity);
                 GettingStartedView.numberOfParameterMatches.setText(String.valueOf(parameterMatchStorage.size()));
                 GettingStartedView.numberOfMatchValues.setText(String.valueOf(matchValueStorage.size()));
-                // Both entities need to be saved
-                returnList.add(newParameterMatchEntity);
-                returnList.add(matchingUrlEntity);
+                // If a session is active add entities to the session and save the session and Url entity, otherwise save both ParameterMatch and Url entity
+                if (session != null) {
+                    session.addMatch(newParameterMatchEntity);
+                    session.addMatchValue(newMatchValueEntity);
+                    returnList.add(session);
+                    returnList.add(matchingUrlEntity);
+                    SessionViewModel.sessionTable.put(this.sessionName, session);
+                } else {
+                    returnList.add(newParameterMatchEntity);
+                    returnList.add(matchingUrlEntity);
+                }
             } else {
                 ParameterMatch relatedParameterMatchEntity = getMatchEntityFromUrlEntity(name, value, url);
                 relatedParameterMatchEntity.addMatchEntryEntity(newMatchValueEntity);
                 this.matchValueStorage.put(newMatchValueEntity.getIdentifier(), newMatchValueEntity);
                 GettingStartedView.numberOfMatchValues.setText(String.valueOf(matchValueStorage.size()));
-                returnList.add(relatedParameterMatchEntity);
+                if (session != null) {
+                    session.addMatch(relatedParameterMatchEntity);
+                    session.addMatchValue(newMatchValueEntity);
+                    returnList.add(session);
+                    SessionViewModel.sessionTable.put(this.sessionName, session);
+                } else {
+                    returnList.add(relatedParameterMatchEntity);
+                }
             }
             this.observableParameterMatchList.add(newParameterMatchEntity);
             if (newParameterMatchEntity.getSession().equals(sessionName)) {
@@ -137,7 +162,12 @@ public class MatchHandler {
     }
 
     private boolean matchEntryExistsInDB(MatchValue matchValueEntity) {
-        int identifier = matchValueEntity.getIdentifier();
+        int identifier = Objects.hash(matchValueEntity.getName(), matchValueEntity.getValue(), matchValueEntity.getMatchProof(),
+                matchValueEntity.getUrl(), "not set");
+        if (hasActiveSession) {
+            identifier = Objects.hash(matchValueEntity.getName(), matchValueEntity.getValue(), matchValueEntity.getMatchProof(),
+                    matchValueEntity.getUrl(), matchValueEntity.getSession());
+        }
         return this.matchValueStorage.containsKey(identifier);
     }
 

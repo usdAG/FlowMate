@@ -10,16 +10,14 @@ import db.CypherQueryHandler;
 import db.DBModel;
 import db.MatchHandler;
 import db.ParameterHandler;
-import db.entities.InputValue;
-import db.entities.ParameterMatch;
+import db.entities.*;
+import events.DeferMatchingFinishedListener;
 import gui.SessionView;
 import gui.container.*;
 import model.SessionViewModel;
 import org.neo4j.ogm.model.Result;
 import session.IdentifiedSession;
-import session.Session;
 import session.SessionHelper;
-import session.SessionParameter;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -30,9 +28,9 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static gui.SessionView.*;
-import static model.SessionViewModel.sessionCounter;
+import static model.SessionViewModel.*;
 
-public class SessionViewController implements ActionListener, ListSelectionListener {
+public class SessionViewController implements ActionListener, ListSelectionListener, DeferMatchingFinishedListener {
 
     private MontoyaApi api;
     private SessionView view;
@@ -51,6 +49,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
         this.containerConverter = new ContainerConverter(api, matchHandler);
         this.crossSessionAudit = crossSessionAudit;
         registerEventHandler();
+        loadSessions();
     }
 
     private void registerEventHandler() {
@@ -60,6 +59,24 @@ public class SessionViewController implements ActionListener, ListSelectionListe
         sessionJList.addListSelectionListener(this);
         sessionSpecificParameterJList.addListSelectionListener(this);
         matchJList.addListSelectionListener(this);
+    }
+
+    private void loadSessions() {
+        Collection<Session> sessions = DBModel.loadAllSessionEntities().stream().sorted(Comparator.comparing(Session::getLowestHistoryId)).toList();
+        DefaultListModel<SessionContainer> listModel = (DefaultListModel<SessionContainer>) sessionJList.getModel();
+        setSessionCounter(sessions.size());
+        for (Session session : sessions) {
+            String sessionName = session.getName();
+            String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
+            int lowestId = session.getLowestHistoryId();
+            int highestId = session.getHighestHistoryId();
+            listModel.addElement(new SessionContainer(sessionName, timeStamp, lowestId, highestId));
+            model.updateSessionInformation(session, sessionName, session.getSessionParameter());
+        }
+        List<SessionParameter> sessionParameters = sessions.stream().toList().get(0).getSessionParameter();
+        for (SessionParameter sessionParameter : sessionParameters) {
+            addToSessionDefList(new SessionDefContainer(sessionParameter.getName(), sessionParameter.getType()));
+        }
     }
 
     @Override
@@ -75,6 +92,8 @@ public class SessionViewController implements ActionListener, ListSelectionListe
                 model.inputValuesFromSessionDefList.clear();
                 model.parameterValuesAndNames.clear();
                 model.helpers.clear();
+                model.deleteSessionsInDB();
+                sessionTable.clear();
             }
             sessionCounter++;
             getRelevantInformationForSessionDefinition();
@@ -226,6 +245,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
             model.updateSessionInformation(newSession, sessionName, sessionParameters);
             model.changeDatabaseEntriesAccordingToSession(sessionName, lowestId, highestId);
             this.identifyAuditFindings(sessionName);
+            DBModel.saveSession(newSession);
         }
     }
 
@@ -267,7 +287,11 @@ public class SessionViewController implements ActionListener, ListSelectionListe
 
     public void updateIdForLastSession(int id) {
         ListModel<SessionContainer> sessions = sessionJList.getModel();
-        sessions.getElementAt(sessions.getSize()-1).updateRange(id);
+        SessionContainer sessionContainer = sessions.getElementAt(sessions.getSize()-1);
+        sessionContainer.updateRange(id);
+        Session session = sessionTable.get(sessionContainer.getName());
+        session.setHighestHistoryId(id);
+        DBModel.saveSession(session);
         view.sessionsPanel.revalidate();
         view.sessionsPanel.repaint();
     }
@@ -314,7 +338,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
             }
             Vector<SessionParameterContainer> vectorSorted = new Vector<>(parameterContainerVector.stream()
                     .sorted(Comparator.comparing(SessionParameterContainer::getName)).toList());
-            sessionSpecificParameterJList.setListData(vectorSorted);
+            setParametersInList(vectorSorted);
 
             int nMatches = 0;
             for (SessionParameterContainer container: parameterContainerVector) {
@@ -351,22 +375,22 @@ public class SessionViewController implements ActionListener, ListSelectionListe
             newParameters.add(new SessionParameter(param.name(), param.value(), param.type().name(), "No new Value", "No new Value"));
         }
         sessionCounter++;
-        Session newSession = new Session("Session_%s".formatted(sessionCounter), messageId, messageId, newParameters);
+        String sessionName = "Session_%s".formatted(sessionCounter);
+        Session newSession = new Session(sessionName, messageId, messageId, newParameters);
         String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
         DefaultListModel<SessionContainer> listModel = (DefaultListModel<SessionContainer>) sessionJList.getModel();
         listModel.get(sessionCounter - 2).updateRange(messageId);
-        listModel.addElement(new SessionContainer("Session_%s".formatted(sessionCounter), timeStamp, messageId, messageId));
+        listModel.addElement(new SessionContainer(sessionName, timeStamp, messageId, messageId));
         sessionJList.revalidate();
         sessionJList.repaint();
-        model.updateSessionInformation(newSession, "Session_%s".formatted(sessionCounter), newParameters);
+        model.updateSessionInformation(newSession, sessionName, newParameters);
+        DBModel.saveSession(newSession);
     }
 
     public void setSessionSpecificParameters(String sessionName) {
         Vector<SessionParameterContainer> parameterContainerList = containerConverter.parameterToContainerSessionDef(getSessionSpecificParameters(sessionName),
                 sessionName, getParamNamesFromSessionDefList());
-        DefaultListModel<SessionParameterContainer> listModel = (DefaultListModel<SessionParameterContainer>) sessionSpecificParameterJList.getModel();
-        listModel.clear();
-        listModel.addAll(parameterContainerList);
+        setParametersInList(parameterContainerList);
 
         int nMatches = 0;
         for (SessionParameterContainer container: parameterContainerList) {
@@ -416,18 +440,16 @@ public class SessionViewController implements ActionListener, ListSelectionListe
     }
     public void changeSessionName(String newName) {
         SessionContainer selectedSession = model.getSelectedSession();
-        Session tempSession = SessionViewModel.sessionTable.get(model.getSelectedSession().getName());
-        SessionViewModel.sessionTable.remove(selectedSession.getName());
-        SessionViewModel.sessionTable.put(newName, tempSession);
         DefaultListModel<SessionContainer> listModel = (DefaultListModel<SessionContainer>) sessionJList.getModel();
         listModel.removeElement(selectedSession);
         listModel.add(model.getSelectedSessionIndex(), new SessionContainer(
                 newName, selectedSession.getCreatedAt(),selectedSession.getLowId(), selectedSession.getHighId()));
+        model.renameSession(selectedSession.getName(), newName);
         model.changeDatabaseEntriesAccordingToSession(newName, selectedSession.getLowId(), selectedSession.getHighId());
     }
 
     private void createUnauthSession(int lowestId, int highestId, List<SessionParameter> sessionParameters) {
-        Session unauthSession = new Session("Unauthenticated", 1, highestId, sessionParameters, true);
+        Session unauthSession = new Session("Unauthenticated", lowestId, highestId, sessionParameters, true);
         String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
         DefaultListModel<SessionContainer> listModel = (DefaultListModel<SessionContainer>) sessionJList.getModel();
         listModel.addElement(new SessionContainer("Unauthenticated", timeStamp, lowestId, highestId));
@@ -453,6 +475,27 @@ public class SessionViewController implements ActionListener, ListSelectionListe
             }
         }
         crossSessionAudit.renderFindings();
+    }
+
+    private static void setParametersInList(Vector<SessionParameterContainer> parameters) {
+        DefaultListModel<SessionParameterContainer> model = (DefaultListModel<SessionParameterContainer>) sessionSpecificParameterJList.getModel();
+        model.clear();
+        model.addAll(parameters);
+    }
+
+    public void identifySessionSpecificParametersAfterDeferMatching() {
+        for (int i = 0; i < sessionJList.getModel().getSize(); i++) {
+            SessionContainer sessionContainer = sessionJList.getModel().getElementAt(i);
+            String sessionName = sessionContainer.getName();
+            int lowestId = sessionContainer.getLowId();
+            int highestId = sessionContainer.getHighId();
+            model.changeDatabaseEntriesAccordingToSession(sessionName, lowestId, highestId);
+        }
+    }
+
+    @Override
+    public void onDeferMatchingFinishedEvent() {
+        identifySessionSpecificParametersAfterDeferMatching();
     }
 
     public void clearDataAndView() {

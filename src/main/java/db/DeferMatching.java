@@ -6,10 +6,9 @@ import burp.HttpResponseParser;
 import burp.RegexMatcher;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.proxy.ProxyHttpRequestResponse;
-import db.entities.InputParameter;
-import db.entities.InputValue;
-import db.entities.ParameterMatch;
-import db.entities.Url;
+import db.entities.*;
+import events.DeferMatchingFinishedEvent;
+import events.DeferMatchingFinishedListener;
 import net.miginfocom.swing.MigLayout;
 import utils.Hashing;
 
@@ -36,12 +35,14 @@ public class DeferMatching implements PropertyChangeListener {
     private JTextArea taskOutput;
     private JButton closeButton;
     private int historySize;
+    private List<DeferMatchingFinishedListener> listeners;
 
     public DeferMatching(MontoyaApi api, HttpResponseParser parser, ParameterHandler pHandler, MatchHandler mHandler) {
         this.api = api;
         this.parser = parser;
         this.pHandler = pHandler;
         this.matchHandler = mHandler;
+        this.listeners = new ArrayList<>();
     }
 
     public void init() {
@@ -91,6 +92,21 @@ public class DeferMatching implements PropertyChangeListener {
             progressBar.setValue(progress);
             taskOutput.append(String.format(
                     "Completed %d/%d of Burp history.\n", (int) historyProgress, historySize));
+        }
+    }
+
+    public void removeDeferMatchingFinishedListener(DeferMatchingFinishedListener listener) {
+        this.listeners.remove(listener);
+    }
+
+    public void addDeferMatchingFinishedListener(DeferMatchingFinishedListener listener) {
+        this.listeners.add(listener);
+    }
+
+    private void fireDeferMatchingFinishedEvent() {
+        DeferMatchingFinishedEvent event = new DeferMatchingFinishedEvent(this);
+        for (DeferMatchingFinishedListener listener : this.listeners) {
+            listener.onDeferMatchingFinishedEvent();
         }
     }
 
@@ -151,6 +167,8 @@ public class DeferMatching implements PropertyChangeListener {
                             identifier = ((ParameterMatch) realMatch).getIdentifier();
                         } else if (realMatch instanceof Url) {
                             identifier = ((Url) realMatch).getIdentifier();
+                        } else if (realMatch instanceof Session) {
+                            identifier = ((Session) realMatch).getIdentifier();
                         }
 
                         if (identifier != -1 && !duplicateIdentifiers.contains(identifier)) {
@@ -173,6 +191,7 @@ public class DeferMatching implements PropertyChangeListener {
             progressDialog.setDefaultCloseOperation(JDialog.HIDE_ON_CLOSE);
             progressBar.setValue(100);
             taskOutput.setText("Completed!\n");
+            fireDeferMatchingFinishedEvent();
         }
     }
 }
