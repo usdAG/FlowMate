@@ -73,6 +73,8 @@ public class SessionViewController implements ActionListener, ListSelectionListe
             listModel.addElement(new SessionContainer(sessionName, timeStamp, lowestId, highestId));
             model.updateSessionInformation(session, sessionName, session.getSessionParameter());
         }
+        if (sessions.isEmpty())
+            return;
         List<SessionParameter> sessionParameters = sessions.stream().toList().get(0).getSessionParameter();
         for (SessionParameter sessionParameter : sessionParameters) {
             addToSessionDefList(new SessionDefContainer(sessionParameter.getName(), sessionParameter.getType()));
