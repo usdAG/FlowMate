@@ -25,7 +25,7 @@ public class HttpListener implements HttpHandler {
     public static boolean detectionIsActive = false;
     public static boolean hasActiveSession = false;
     public static boolean liveMatchingIsActive = true;
-    private static List<SessionParameter> monitoredParameter;
+    public static List<SessionParameter> monitoredParameter;
     public ParameterHandler parameterHandler;
     public MatchHandler matchHandler;
     private String messageHash;

@@ -2,6 +2,7 @@ package model;
 
 import burp.ContainerConverter;
 import burp.HttpListener;
+import burp.RegexMatcher;
 import burp.api.montoya.MontoyaApi;
 import db.DBModel;
 import db.MatchHandler;
@@ -334,5 +335,16 @@ public class SessionViewModel {
         String query2 = "Match (n:SessionParameter) detach delete n";
         DBModel.executeCypher(query1, Map.of());
         DBModel.executeCypher(query2, Map.of());
+    }
+
+    public static void deleteMatchesFromSession() {
+        var keys = sessionTable.keys().asIterator();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            Session session = sessionTable.get(key);
+            session.setParameterMatchesRelatedToSession(new ArrayList<>());
+            session.setMatchValuesRelatedToSession(new ArrayList<>());
+            SessionViewModel.sessionTable.put(key, session);
+        }
     }
 }
