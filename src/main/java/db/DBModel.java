@@ -43,12 +43,58 @@ public class DBModel {
 
     public static void saveParameter(InputParameter inputParameter) {
         paramSaveCounter += 1;
+        Throwable txEx = null;
+        int RETRIES = 20;
+        int BACKOFF = 3000;
         Session session = sessionFactory.openSession();
-        try (Transaction tx = session.beginTransaction()) {
-            session.save(inputParameter);
-            tx.commit();
+        for ( int i = 0; i < RETRIES; i++ )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                session.save(inputParameter);
+                tx.commit();
+                session.clear();
+                return;
+            }
+            catch ( Throwable ex )
+            {
+                txEx = ex;
+
+                // Add whatever exceptions to retry on here
+                if ( !(ex instanceof DeadlockDetectedException || ex instanceof TransientException) )
+                {
+                    break;
+                }
+            }
+
+            // Wait so that we don't immediately get into the same deadlock
+            if ( i < RETRIES - 1 )
+            {
+                try
+                {
+                    Thread.sleep( BACKOFF );
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new TransactionFailureException( "Interrupted", e );
+                }
+            }
         }
+
         session.clear();
+
+        if ( txEx instanceof TransactionFailureException )
+        {
+            throw ((TransactionFailureException) txEx);
+        }
+        else if ( txEx instanceof Error )
+        {
+            throw ((Error) txEx);
+        }
+        else
+        {
+            throw ((RuntimeException) txEx);
+        }
     }
 
     public static void saveURL(Url urlEntity) {
@@ -200,12 +246,58 @@ public class DBModel {
     }
 
     public static void saveSession(db.entities.Session entity) {
+        Throwable txEx = null;
+        int RETRIES = 20;
+        int BACKOFF = 3000;
         Session session = sessionFactory.openSession();
-        try (Transaction tx = session.beginTransaction()) {
-            session.save(entity);
-            tx.commit();
+        for ( int i = 0; i < RETRIES; i++ )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                session.save(entity);
+                tx.commit();
+                session.clear();
+                return;
+            }
+            catch ( Throwable ex )
+            {
+                txEx = ex;
+
+                // Add whatever exceptions to retry on here
+                if ( !(ex instanceof DeadlockDetectedException || ex instanceof TransientException) )
+                {
+                    break;
+                }
+            }
+
+            // Wait so that we don't immediately get into the same deadlock
+            if ( i < RETRIES - 1 )
+            {
+                try
+                {
+                    Thread.sleep( BACKOFF );
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new TransactionFailureException( "Interrupted", e );
+                }
+            }
         }
+
         session.clear();
+
+        if ( txEx instanceof TransactionFailureException )
+        {
+            throw ((TransactionFailureException) txEx);
+        }
+        else if ( txEx instanceof Error )
+        {
+            throw ((Error) txEx);
+        }
+        else
+        {
+            throw ((RuntimeException) txEx);
+        }
     }
 
     public static void purgeDatabase() {
