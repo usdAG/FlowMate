@@ -51,6 +51,10 @@ public class MatchValue {
         this.identifier = Objects.hash(name, value, matchProof, url, session);
     }
 
+    public String getName() {
+        return name;
+    }
+
     public String getUrl() {
         return url;
     }

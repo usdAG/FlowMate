@@ -2,13 +2,15 @@ package db;
 
 import db.entities.*;
 import gui.GettingStartedView;
+import org.neo4j.driver.exceptions.TransientException;
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.ogm.config.Configuration;
 import org.neo4j.ogm.model.Result;
 import org.neo4j.ogm.session.Session;
 import org.neo4j.ogm.session.SessionFactory;
 import org.neo4j.ogm.transaction.Transaction;
 import utils.Logger;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -41,21 +43,113 @@ public class DBModel {
 
     public static void saveParameter(InputParameter inputParameter) {
         paramSaveCounter += 1;
+        Throwable txEx = null;
+        int RETRIES = 20;
+        int BACKOFF = 3000;
         Session session = sessionFactory.openSession();
-        try (Transaction tx = session.beginTransaction()) {
-            session.save(inputParameter);
-            tx.commit();
+        for ( int i = 0; i < RETRIES; i++ )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                session.save(inputParameter);
+                tx.commit();
+                session.clear();
+                return;
+            }
+            catch ( Throwable ex )
+            {
+                txEx = ex;
+
+                // Add whatever exceptions to retry on here
+                if ( !(ex instanceof DeadlockDetectedException || ex instanceof TransientException) )
+                {
+                    break;
+                }
+            }
+
+            // Wait so that we don't immediately get into the same deadlock
+            if ( i < RETRIES - 1 )
+            {
+                try
+                {
+                    Thread.sleep( BACKOFF );
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new TransactionFailureException( "Interrupted", e );
+                }
+            }
         }
+
         session.clear();
+
+        if ( txEx instanceof TransactionFailureException )
+        {
+            throw ((TransactionFailureException) txEx);
+        }
+        else if ( txEx instanceof Error )
+        {
+            throw ((Error) txEx);
+        }
+        else
+        {
+            throw ((RuntimeException) txEx);
+        }
     }
 
     public static void saveURL(Url urlEntity) {
+        Throwable txEx = null;
+        int RETRIES = 20;
+        int BACKOFF = 3000;
         Session session = sessionFactory.openSession();
-        try (Transaction tx = session.beginTransaction()) {
-            session.save(urlEntity);
-            tx.commit();
+        for ( int i = 0; i < RETRIES; i++ )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                session.save(urlEntity);
+                tx.commit();
+                session.clear();
+                return;
+            }
+            catch ( Throwable ex )
+            {
+                txEx = ex;
+
+                // Add whatever exceptions to retry on here
+                if ( !(ex instanceof DeadlockDetectedException || ex instanceof TransientException) )
+                {
+                    break;
+                }
+            }
+
+            // Wait so that we don't immediately get into the same deadlock
+            if ( i < RETRIES - 1 )
+            {
+                try
+                {
+                    Thread.sleep( BACKOFF );
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new TransactionFailureException( "Interrupted", e );
+                }
+            }
         }
+
         session.clear();
+
+        if ( txEx instanceof TransactionFailureException )
+        {
+            throw ((TransactionFailureException) txEx);
+        }
+        else if ( txEx instanceof Error )
+        {
+            throw ((Error) txEx);
+        }
+        else
+        {
+            throw ((RuntimeException) txEx);
+        }
     }
 
     public static void saveMatchEntity(ParameterMatch parameterMatchEntity) {
@@ -107,6 +201,13 @@ public class DBModel {
         return collection;
     }
 
+    public static Collection<db.entities.Session> loadAllSessionEntities() {
+        Session session = sessionFactory.openSession();
+        Collection<db.entities.Session> collection = session.loadAll(db.entities.Session.class);
+        session.clear();
+        return collection;
+    }
+
    public static Result query(String cypherQuery, Map<String, String> params) {
         Session session = sessionFactory.openSession();
         try (Transaction tx = session.beginTransaction(Transaction.Type.READ_ONLY)) {
@@ -142,6 +243,61 @@ public class DBModel {
             tx.commit();
         }
         session.clear();
+    }
+
+    public static void saveSession(db.entities.Session entity) {
+        Throwable txEx = null;
+        int RETRIES = 20;
+        int BACKOFF = 3000;
+        Session session = sessionFactory.openSession();
+        for ( int i = 0; i < RETRIES; i++ )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                session.save(entity);
+                tx.commit();
+                session.clear();
+                return;
+            }
+            catch ( Throwable ex )
+            {
+                txEx = ex;
+
+                // Add whatever exceptions to retry on here
+                if ( !(ex instanceof DeadlockDetectedException || ex instanceof TransientException) )
+                {
+                    break;
+                }
+            }
+
+            // Wait so that we don't immediately get into the same deadlock
+            if ( i < RETRIES - 1 )
+            {
+                try
+                {
+                    Thread.sleep( BACKOFF );
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new TransactionFailureException( "Interrupted", e );
+                }
+            }
+        }
+
+        session.clear();
+
+        if ( txEx instanceof TransactionFailureException )
+        {
+            throw ((TransactionFailureException) txEx);
+        }
+        else if ( txEx instanceof Error )
+        {
+            throw ((Error) txEx);
+        }
+        else
+        {
+            throw ((RuntimeException) txEx);
+        }
     }
 
     public static void purgeDatabase() {

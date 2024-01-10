@@ -79,6 +79,7 @@ public class NoiseReductionModel {
         DBModel.executeCypher(query1, Map.of());
         String query2 = "Match (n:MatchValue) detach delete n";
         DBModel.executeCypher(query2, Map.of());
+        SessionViewModel.deleteMatchesFromSession();
         this.deferMatching.init();
     }
 }

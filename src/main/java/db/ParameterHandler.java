@@ -3,11 +3,13 @@ package db;
 import burp.RegexMatcher;
 import db.entities.InputParameter;
 import db.entities.InputValue;
+import db.entities.Session;
 import db.entities.Url;
 import gui.GettingStartedView;
 import gui.container.RuleContainer;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import model.SessionViewModel;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -100,9 +102,15 @@ public class ParameterHandler {
         InputValue newInputValue = new InputValue(parameterHelper.getValue(), url, type, messageHash);
         if (this.hasActiveSession) {
             newInputValue = new InputValue(parameterHelper.getValue(), url, type, messageHash, this.sessionName);
+            Session session = SessionViewModel.sessionTable.get(this.sessionName);
+            if (session != null) {
+                session.addInputValue(newInputValue);
+                DBModel.saveSession(session);
+                SessionViewModel.sessionTable.put(this.sessionName, session);
+            }
         }
         RegexMatcher.excludeParameter(newInputParameterEntity);
-        RegexMatcher.excludeInputValues(newInputValue);
+        RegexMatcher.excludeInputValue(newInputValue);
 
         // Check if the URL Entity already exists in the DB
         // If not, add it to the list of known Urls and save the Url + InputParameter in the DB
@@ -222,6 +230,18 @@ public class ParameterHandler {
 
     public void updateParameterExclusion(RuleContainer ruleContainer) {
         RegexMatcher.excludeParametersForSingleRule(this.observableInputParameterList, ruleContainer);
+        if (hasActiveSession) {
+            // Update exclusion on InputValues linked to Sessions
+            var keys = SessionViewModel.sessionTable.keys().asIterator();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                Session session = SessionViewModel.sessionTable.get(key);
+                List<InputValue> inputValues = session.getInputValuesRelatedToSession();
+                RegexMatcher.excludeInputValuesForSingleRule(inputValues, ruleContainer);
+                session.setInputValuesRelatedToSession(inputValues);
+                SessionViewModel.sessionTable.put(key, session);
+            }
+        }
     }
 }
 
