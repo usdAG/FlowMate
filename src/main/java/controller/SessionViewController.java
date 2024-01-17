@@ -408,15 +408,10 @@ public class SessionViewController implements ActionListener, ListSelectionListe
     }
 
     public List<ParameterMatch> getSessionSpecificParameters(String sessionName) {
-        List<ParameterMatch> parameters = new ArrayList<>();
         Map<String, String> values = Collections.singletonMap("sessionName", sessionName);
         String query = "MATCH (m:ParameterMatch {session: $sessionName}) RETURN m";
         Result queryResult = DBModel.query(query, values);
-        Iterator<Map<String, Object>> resultIterator = queryResult.queryResults().iterator();
-        while (resultIterator.hasNext()) {
-            Map<?, ?> result = resultIterator.next();
-            parameters.add((ParameterMatch) result.get("m"));
-        }
+        List<ParameterMatch> parameters = CypherQueryHandler.getParameterMatchesFromQueryResult(queryResult);
         return parameters;
     }
 
@@ -466,7 +461,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
         List<ParameterMatch> sessionSpecificParams = getSessionSpecificParameters(sessionName);
         for (ParameterMatch match : sessionSpecificParams) {
             Map<String, String> values = Map.of("name", match.getName(), "type", match.getType(), "value", match.getValue());
-            String valueQuery = "MATCH (p:InputParameter {name: $name, type: $type})-[OCCURS_WITH_VALUE]-(m:InputValue {type: $type, value: $value}) RETURN m";
+            String valueQuery = "MATCH (p:InputParameter {name: $name, type: $type})-[OCCURS_WITH_VALUE]-(o:InputValue {type: $type, value: $value}) RETURN o";
             Result result = DBModel.query(valueQuery, values);
             for (var parameterValue : CypherQueryHandler.getOccurrencesFromQueryResult(result).stream().distinct().toList()) {
                 String sessionEntered = parameterValue.getSession();

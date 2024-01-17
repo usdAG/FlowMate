@@ -1,4 +1,5 @@
 package model;
+import db.CypherQueryHandler;
 import db.DBModel;
 import db.entities.InputValue;
 import db.entities.MatchValue;
@@ -38,20 +39,15 @@ public class QueryViewModel {
         this.occurrenceEntityList.clear();
         this.parameterMatchEntityList.clear();
         String query = "MATCH (n:InputParameter {name: $param, type: \"%s\"})-[OCCURS_WITH_VALUE]->(o:InputValue)".formatted(paramType) +
-                "OPTIONAL MATCH (m:ParameterMatch {name: $param, type: \"%s\"})-[MATCH]->(e:MatchValue)".formatted(paramType) +
-                "RETURN o, m, e";
+                "OPTIONAL MATCH (m:ParameterMatch {name: $param, type: \"%s\"})-[MATCH]->(mv:MatchValue)".formatted(paramType) +
+                "RETURN o, m, mv";
         Map<String, String> params = Map.of("param", paramName);
         Result queryResult = DBModel.query(query, params);
         Iterator<Map<String, Object>> results = queryResult.queryResults().iterator();
 
-        while (results.hasNext()) {
-            Map<?, ?> result = results.next();
-            occurrenceEntityList.add((InputValue) result.get("o"));
-            if (result.get("m") != null) {
-                parameterMatchEntityList.add((ParameterMatch) result.get("m"));
-                matchValueEntityList.add((MatchValue) result.get("e"));
-            }
-        }
+        occurrenceEntityList.addAll(CypherQueryHandler.getOccurrencesFromQueryResult(queryResult));
+        parameterMatchEntityList.addAll(CypherQueryHandler.getParameterMatchesFromQueryResult(queryResult));
+        matchValueEntityList.addAll(CypherQueryHandler.getMatchValuesFromQueryResult(queryResult));
     }
 
     public void clearAllData() {
