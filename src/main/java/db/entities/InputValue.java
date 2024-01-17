@@ -1,7 +1,6 @@
 package db.entities;
 
 import org.neo4j.ogm.annotation.Id;
-import org.neo4j.ogm.annotation.Transient;
 
 import java.util.Objects;
 

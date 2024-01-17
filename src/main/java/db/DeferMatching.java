@@ -3,7 +3,6 @@ package db;
 import burp.BurpExtender;
 import burp.HttpResponse;
 import burp.HttpResponseParser;
-import burp.RegexMatcher;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.proxy.ProxyHttpRequestResponse;
 import db.entities.*;
@@ -19,8 +18,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 public class DeferMatching implements PropertyChangeListener {
 

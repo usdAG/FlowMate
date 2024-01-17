@@ -10,7 +10,10 @@ import db.CypherQueryHandler;
 import db.DBModel;
 import db.MatchHandler;
 import db.ParameterHandler;
-import db.entities.*;
+import db.entities.InputValue;
+import db.entities.ParameterMatch;
+import db.entities.Session;
+import db.entities.SessionParameter;
 import events.DeferMatchingFinishedListener;
 import gui.SessionView;
 import gui.container.*;
@@ -247,7 +250,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
             model.updateSessionInformation(newSession, sessionName, sessionParameters);
             model.changeDatabaseEntriesAccordingToSession(sessionName, lowestId, highestId);
             this.identifyAuditFindings(sessionName);
-            DBModel.saveSession(newSession);
+            DBModel.saveEntity(newSession);
         }
     }
 
@@ -293,7 +296,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
         sessionContainer.updateRange(id);
         Session session = sessionTable.get(sessionContainer.getName());
         session.setHighestHistoryId(id);
-        DBModel.saveSession(session);
+        DBModel.saveEntity(session);
         view.sessionsPanel.revalidate();
         view.sessionsPanel.repaint();
     }
@@ -386,7 +389,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
         sessionJList.revalidate();
         sessionJList.repaint();
         model.updateSessionInformation(newSession, sessionName, newParameters);
-        DBModel.saveSession(newSession);
+        DBModel.saveEntity(newSession);
     }
 
     public void setSessionSpecificParameters(String sessionName) {

@@ -1,7 +1,6 @@
 package controller;
 
 import burp.ContainerConverter;
-import burp.RegexMatcher;
 import burp.api.montoya.MontoyaApi;
 import db.DBModel;
 import db.MatchHandler;

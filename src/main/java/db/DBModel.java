@@ -44,136 +44,6 @@ public class DBModel {
         }
     }
 
-    public static void saveParameter(InputParameter inputParameter) {
-        paramSaveCounter += 1;
-        Throwable txEx = null;
-        int RETRIES = 20;
-        int BACKOFF = 3000;
-        Session session = sessionFactory.openSession();
-        for ( int i = 0; i < RETRIES; i++ )
-        {
-            try ( Transaction tx = session.beginTransaction() )
-            {
-                session.save(inputParameter);
-                tx.commit();
-                session.clear();
-                return;
-            }
-            catch ( Throwable ex )
-            {
-                txEx = ex;
-
-                // Add whatever exceptions to retry on here
-                if ( !(ex instanceof DeadlockDetectedException || ex instanceof TransientException) )
-                {
-                    break;
-                }
-            }
-
-            // Wait so that we don't immediately get into the same deadlock
-            if ( i < RETRIES - 1 )
-            {
-                try
-                {
-                    Thread.sleep( BACKOFF );
-                }
-                catch ( InterruptedException e )
-                {
-                    TransactionFailureException exception = new TransactionFailureException( "Interrupted", e );
-                    Logger.getInstance().logToError(Arrays.toString(exception.getStackTrace()));
-                    throw exception;
-                }
-            }
-        }
-
-        session.clear();
-
-        if ( txEx instanceof TransactionFailureException )
-        {
-            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
-            throw ((TransactionFailureException) txEx);
-        }
-        else if ( txEx instanceof Error )
-        {
-            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
-            throw ((Error) txEx);
-        }
-        else
-        {
-            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
-            throw ((RuntimeException) txEx);
-        }
-    }
-
-    public static void saveURL(Url urlEntity) {
-        Throwable txEx = null;
-        int RETRIES = 20;
-        int BACKOFF = 3000;
-        Session session = sessionFactory.openSession();
-        for ( int i = 0; i < RETRIES; i++ )
-        {
-            try ( Transaction tx = session.beginTransaction() )
-            {
-                session.save(urlEntity);
-                tx.commit();
-                session.clear();
-                return;
-            }
-            catch ( Throwable ex )
-            {
-                txEx = ex;
-
-                // Add whatever exceptions to retry on here
-                if ( !(ex instanceof DeadlockDetectedException || ex instanceof TransientException) )
-                {
-                    break;
-                }
-            }
-
-            // Wait so that we don't immediately get into the same deadlock
-            if ( i < RETRIES - 1 )
-            {
-                try
-                {
-                    Thread.sleep( BACKOFF );
-                }
-                catch ( InterruptedException e )
-                {
-                    TransactionFailureException exception = new TransactionFailureException( "Interrupted", e );
-                    Logger.getInstance().logToError(Arrays.toString(exception.getStackTrace()));
-                    throw exception;
-                }
-            }
-        }
-
-        session.clear();
-
-        if ( txEx instanceof TransactionFailureException )
-        {
-            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
-            throw ((TransactionFailureException) txEx);
-        }
-        else if ( txEx instanceof Error )
-        {
-            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
-            throw ((Error) txEx);
-        }
-        else
-        {
-            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
-            throw ((RuntimeException) txEx);
-        }
-    }
-
-    public static void saveMatchEntity(ParameterMatch parameterMatchEntity) {
-        Session session = sessionFactory.openSession();
-        try (Transaction tx = session.beginTransaction()) {
-            session.save(parameterMatchEntity);
-            tx.commit();
-        }
-        session.clear();
-    }
-
     public static Collection<InputParameter> loadAllParameters() {
         Session session = sessionFactory.openSession();
         Collection<InputParameter> collection = session.loadAll(InputParameter.class);
@@ -240,25 +110,9 @@ public class DBModel {
         session.clear();
     }
 
-    public static void saveBulk(List<Object> entities) {
-        Session session = sessionFactory.openSession();
-        try (Transaction tx = session.beginTransaction()) {
-            session.save(entities);
-            tx.commit();
-        }
-        session.clear();
-    }
-
-    public static void saveBulkParameters(List<InputParameter> entities) {
-        Session session = sessionFactory.openSession();
-        try (Transaction tx = session.beginTransaction()) {
-            session.save(entities);
-            tx.commit();
-        }
-        session.clear();
-    }
-
-    public static void saveSession(db.entities.Session entity) {
+    public static void saveEntity(Object entity) {
+        if (entity instanceof InputParameter)
+            paramSaveCounter += 1;
         Throwable txEx = null;
         int RETRIES = 20;
         int BACKOFF = 3000;
@@ -316,6 +170,24 @@ public class DBModel {
             Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
             throw ((RuntimeException) txEx);
         }
+    }
+
+    public static void saveBulk(List<Object> entities) {
+        Session session = sessionFactory.openSession();
+        try (Transaction tx = session.beginTransaction()) {
+            session.save(entities);
+            tx.commit();
+        }
+        session.clear();
+    }
+
+    public static void saveBulkParameters(List<InputParameter> entities) {
+        Session session = sessionFactory.openSession();
+        try (Transaction tx = session.beginTransaction()) {
+            session.save(entities);
+            tx.commit();
+        }
+        session.clear();
     }
 
     public static void purgeDatabase() {

@@ -115,7 +115,7 @@ public class ParameterHandler {
             Session session = SessionViewModel.sessionTable.get(this.sessionName);
             if (session != null) {
                 session.addInputValue(newInputValue);
-                DBModel.saveSession(session);
+                DBModel.saveEntity(session);
                 SessionViewModel.sessionTable.put(this.sessionName, session);
             }
         }
@@ -133,8 +133,8 @@ public class ParameterHandler {
             GettingStartedView.numberOfParameterValues.setText(String.valueOf(parameterValueStorage.size()));
             GettingStartedView.numberOfParameters.setText(String.valueOf(parameterStorage.size()));
             GettingStartedView.numberOfUrls.setText(String.valueOf(urlStorage.size()));
-            DBModel.saveParameter(newInputParameterEntity);
-            DBModel.saveURL(newUrlEntity);
+            DBModel.saveEntity(newInputParameterEntity);
+            DBModel.saveEntity(newUrlEntity);
             this.observableInputParameterList.add(newInputParameterEntity);
             if (newInputValue.getSession().equals(sessionName)) {
                 this.observableInputParameterListSession.add(newInputParameterEntity);
@@ -155,8 +155,8 @@ public class ParameterHandler {
                 relatedUrlEntity.addParameterFoundInUrl(newInputParameterEntity);
                 parameterStorage.put(newInputParameterEntity.getIdentifier(), newInputParameterEntity);
                 GettingStartedView.numberOfParameters.setText(String.valueOf(parameterStorage.size()));
-                DBModel.saveParameter(newInputParameterEntity);
-                DBModel.saveURL(relatedUrlEntity);
+                DBModel.saveEntity(newInputParameterEntity);
+                DBModel.saveEntity(relatedUrlEntity);
                 this.observableInputParameterList.add(newInputParameterEntity);
             } else {
                 InputParameter existingEntity = getExistingParameter(newInputParameterEntity.getIdentifier());
@@ -164,7 +164,7 @@ public class ParameterHandler {
                     existingEntity.addOccurence(newInputValue);
                     this.parameterValueStorage.put(newInputValue.getIdentifier(), newInputValue);
                     GettingStartedView.numberOfParameterValues.setText(String.valueOf(parameterValueStorage.size()));
-                    DBModel.saveParameter(existingEntity);
+                    DBModel.saveEntity(existingEntity);
                     this.observableInputParameterList.add(newInputParameterEntity);
                     if (newInputValue.getSession().equals(sessionName)) {
                         this.observableInputParameterListSession.add(newInputParameterEntity);

@@ -2,7 +2,6 @@ package model;
 
 import burp.ContainerConverter;
 import burp.HttpListener;
-import burp.RegexMatcher;
 import burp.api.montoya.MontoyaApi;
 import db.DBModel;
 import db.MatchHandler;
@@ -11,9 +10,7 @@ import db.entities.*;
 import gui.container.SessionContainer;
 import org.neo4j.ogm.model.Result;
 import session.IdentifiedSession;
-import db.entities.Session;
 import session.SessionHelper;
-import db.entities.SessionParameter;
 import utils.Hashing;
 
 import java.util.*;
@@ -119,7 +116,7 @@ public class SessionViewModel {
                     "RETURN n";
             DBModel.executeCypher(query, values);
             Session sessionToSave = connectEntitiesToSessionNode(sessionName, inputValues, parameterMatches, matchValues);
-            DBModel.saveSession(sessionToSave);
+            DBModel.saveEntity(sessionToSave);
             changeInStorages(nodesToChange, sessionName);
         }
     }
@@ -129,7 +126,7 @@ public class SessionViewModel {
         sessionTable.remove(oldName);
         session.setName(newName);
         sessionTable.put(newName, session);
-        DBModel.saveSession(session);
+        DBModel.saveEntity(session);
     }
 
     private void changeInStorages(List<Integer> nodesToChange, String sessionName) {
