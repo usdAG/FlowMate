@@ -1,6 +1,8 @@
 package db;
 
 import audit.*;
+import burp.HttpListener;
+import burp.api.montoya.MontoyaApi;
 import controller.SessionViewController;
 import db.entities.MatchValue;
 import db.entities.ParameterMatch;
@@ -30,10 +32,11 @@ public class MatchHandler {
     private HeaderMatchAudit headerMatchAudit;
     private LongDistanceMatchAudit longDistanceMatchAudit;
     private KeywordMatchAudit keywordMatchAudit;
+    private MontoyaApi api;
 
     public MatchHandler(ParameterHandler parameterHandler, CrossSessionAudit crossSessionAudit, CrossContentTypeAudit crossContentTypeAudit,
                         CrossScopeAudit crossScopeAudit, HeaderMatchAudit headerMatchAudit, LongDistanceMatchAudit longDistanceMatchAudit,
-                        KeywordMatchAudit keywordMatchAudit) {
+                        KeywordMatchAudit keywordMatchAudit, MontoyaApi api) {
         this.matchValueStorage = new Hashtable<>();
         this.parameterMatchStorage = new Hashtable<>();
         this.parameterHandler = parameterHandler;
@@ -45,6 +48,7 @@ public class MatchHandler {
         this.headerMatchAudit = headerMatchAudit;
         this.longDistanceMatchAudit = longDistanceMatchAudit;
         this.keywordMatchAudit = keywordMatchAudit;
+        this.api = api;
         loadEntities();
     }
 
@@ -89,6 +93,10 @@ public class MatchHandler {
         String messageHash = match.getMessageHash();
         String url = match.getUrl();
 
+        // Check if a match was created for an out-of-scope URL, if yes, return since then there is no db entry for the URL
+        if (!this.api.scope().isInScope(url))
+            return returnList;
+
         ParameterMatch newParameterMatchEntity = new ParameterMatch(name, value, type, messageHash, url, match.getInputValueObj());
         MatchValue newMatchValueEntity = new MatchValue(name, value, responseContentType, matchProof, url, messageHash);
 
@@ -111,6 +119,10 @@ public class MatchHandler {
         this.longDistanceMatchAudit.performAudit(match, newMatchValueEntity, this);
 
         Url matchingUrlEntity = getMatchingUrlEntity(url);
+
+        // matchingUrlEntity = null means there is no entry for it in the db and further continuing will lead to an error
+        if (matchingUrlEntity == null)
+            return returnList;
 
         if (!matchEntryExistsInDB(newMatchValueEntity)) {
             if (!matchEntityExistsInUrlEntity(matchingUrlEntity, name, value)) {

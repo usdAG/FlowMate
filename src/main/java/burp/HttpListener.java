@@ -40,7 +40,7 @@ public class HttpListener implements HttpHandler {
         this.respParser = new HttpResponseParser(this.api);
         this.parameterHandler = new ParameterHandler();
         this.matchHandler = new MatchHandler(this.parameterHandler, crossSessionAuditor, crossContentTypeAuditor,
-                crossScopeAuditor, headerMatchAuditor, longDistanceMatchAuditor, keywordMatchAuditor);
+                crossScopeAuditor, headerMatchAuditor, longDistanceMatchAuditor, keywordMatchAuditor, api);
         this.messageId = 0;
         this.messageHash = "";
         monitoredParameter = new ArrayList<>();
