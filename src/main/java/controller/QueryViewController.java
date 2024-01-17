@@ -21,10 +21,8 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.*;
 import java.util.List;
-import java.util.Vector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -327,7 +325,7 @@ public class QueryViewController implements ActionListener, ListSelectionListene
             ruleContainer.setActive(false);
         }
         this.parameterHandler.updateParameterExclusion(ruleContainer);
-        DBModel.saveBulkParameters(this.parameterHandler.observableInputParameterList);
+        DBModel.saveBulk(Collections.singletonList(this.parameterHandler.observableInputParameterList));
         updateParameters();
     }
 
