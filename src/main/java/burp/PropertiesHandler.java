@@ -19,19 +19,20 @@ public class PropertiesHandler {
     private MontoyaApi api;
 
     public boolean isFirstTimeLoading;
-    private boolean isMatching;
+    public boolean isMatching;
 
     public PropertiesHandler(MontoyaApi api) {
         this.api = api;
         this.isFirstTimeLoading = false;
         this.isMatching = false;
+        checkBurpStateMatchingWithDB();
     }
 
     /*
     *   Checks if the Burp State is matching with the DB by checking if the stored key in the burp state equals
     *   the stored key in the properties file in the db directory
     */
-    public boolean isBurpStateMatchingWithDB() {
+    public void checkBurpStateMatchingWithDB() {
         // extensionData().getString("IsRightState"); returns null if the key doesn't exist
         String savedKey = this.api.persistence().extensionData().getString("IsRightState");
         File propertiesFile = FileSystemUtil.PROPERTIES_PATH;
@@ -47,7 +48,6 @@ public class PropertiesHandler {
                 Logger.getInstance().logToOutput("Saved new Hash in Burp State + " + propertiesFile.toPath());
                 this.isFirstTimeLoading = true;
                 this.isMatching = true;
-                return true;
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -58,7 +58,6 @@ public class PropertiesHandler {
                 Files.writeString(propertiesFile.toPath(), "IsRightState:" + savedKey);
                 Logger.getInstance().logToOutput(String.format("Database is empty but Burp State is not. Saved Burp State Hash in %s\n To ensure proper working of the extension Create a new Burp Project", propertiesFile.toPath()));
                 this.isMatching = false;
-                return false;
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -71,7 +70,6 @@ public class PropertiesHandler {
                 Logger.getInstance().logToOutput("Saved new Hash in Burp State + " + propertiesFile.toPath());
                 this.isFirstTimeLoading = true;
                 this.isMatching = true;
-                return true;
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -83,7 +81,6 @@ public class PropertiesHandler {
                 String savedHash = this.api.persistence().extensionData().getString("IsRightState");
                 String cutHash = prop.get(0).split(":")[1];
                 this.isMatching = cutHash.equals(savedHash);
-                return cutHash.equals(savedHash);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -148,7 +145,7 @@ public class PropertiesHandler {
     }
 
     public void setDefaultRulesOnFirstLoad() {
-        if (isFirstTimeLoading) {
+        if (isFirstTimeLoading && loadNoiseReductionRules().isEmpty()) {
             ObjectMapper objectMapper = new ObjectMapper();
             this.isFirstTimeLoading = false;
             try {

@@ -121,7 +121,7 @@ public class GettingStartedView extends JScrollPane {
             }
         });
         
-        if (this.propertiesHandler.isBurpStateMatchingWithDB()) {
+        if (this.propertiesHandler.isMatching) {
             correctStateHeadline.setText("<html><h2 style=\"color:green\">Burp Project is Matching with Database Entries!</h2></html>");
         } else {
             correctStateHeadline.setText("<html><h2 style=\"color:red\">Burp Project is NOT Matching with Database Entries!</h2></html>");
