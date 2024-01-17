@@ -3,6 +3,7 @@ package utils;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Formatter;
 
 public class Hashing {
@@ -12,6 +13,7 @@ public class Hashing {
         try {
             sha512 = MessageDigest.getInstance("SHA-512");
         } catch (NoSuchAlgorithmException e) {
+            Logger.getInstance().logToError(Arrays.toString(e.getStackTrace()));
             e.printStackTrace();
         }
         var digest = sha512.digest(input.getBytes());
@@ -24,6 +26,7 @@ public class Hashing {
         try {
             md = MessageDigest.getInstance("SHA-1");
         } catch (NoSuchAlgorithmException e) {
+            Logger.getInstance().logToError(Arrays.toString(e.getStackTrace()));
             throw new RuntimeException(e);
         }
         return byteArray2Hex(md.digest(convertme));

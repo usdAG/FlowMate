@@ -13,6 +13,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import model.SessionViewModel;
 import org.neo4j.ogm.model.Result;
+import utils.Logger;
 
 import java.util.*;
 
@@ -63,8 +64,11 @@ public class MatchHandler {
     }
 
     Map<Integer, ParameterMatch> combineListsIntoMatchEntityMap (List<Integer> keys, List<ParameterMatch> values) {
-        if (keys.size() != values.size())
-            throw new IllegalArgumentException ("Cannot combine lists with dissimilar sizes");
+        if (keys.size() != values.size()) {
+            IllegalArgumentException exception = new IllegalArgumentException("Cannot combine lists with dissimilar sizes");
+            Logger.getInstance().logToError(Arrays.toString(exception.getStackTrace()));
+            throw exception;
+        }
         Map<Integer, ParameterMatch> map = new Hashtable<>();
         for (int i=0; i<keys.size(); i++) {
             map.put(keys.get(i), values.get(i));
@@ -73,8 +77,11 @@ public class MatchHandler {
     }
 
     Map<Integer, MatchValue> combineListsIntoMatchEntryEntityMap (List<Integer> keys, List<MatchValue> values) {
-        if (keys.size() != values.size())
-            throw new IllegalArgumentException ("Cannot combine lists with dissimilar sizes");
+        if (keys.size() != values.size()) {
+            IllegalArgumentException exception = new IllegalArgumentException("Cannot combine lists with dissimilar sizes");
+            Logger.getInstance().logToError(Arrays.toString(exception.getStackTrace()));
+            throw exception;
+        }
         Map<Integer, MatchValue> map = new Hashtable<>();
         for (int i=0; i<keys.size(); i++) {
             map.put(keys.get(i), values.get(i));

@@ -11,6 +11,7 @@ import events.DeferMatchingFinishedEvent;
 import events.DeferMatchingFinishedListener;
 import net.miginfocom.swing.MigLayout;
 import utils.Hashing;
+import utils.Logger;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,10 +19,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.*;
 import java.util.List;
-import java.util.Set;
 
 public class DeferMatching implements PropertyChangeListener {
 
@@ -113,7 +112,7 @@ public class DeferMatching implements PropertyChangeListener {
     class MatchTask extends SwingWorker<Void, Void> {
 
         @Override
-        protected Void doInBackground() throws Exception {
+        protected Void doInBackground() {
             try {
                 int historySize = api.proxy().history().size();
                 var proxyList = api.proxy().history().subList(BurpExtender.historyStart, historySize);
@@ -181,6 +180,7 @@ public class DeferMatching implements PropertyChangeListener {
                 DBModel.saveBulk(allMatches);
                 return null;
             } catch (Exception e) {
+                Logger.getInstance().logToError(Arrays.toString(e.getStackTrace()));
                 e.printStackTrace();
                 return null;
             }

@@ -6,6 +6,7 @@ import db.entities.InputParameter;
 import db.entities.InputValue;
 import org.jsoup.parser.Parser;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 import java.util.stream.Collectors;
@@ -23,6 +24,7 @@ public class DefaultParser extends ParserBase implements IParser {
             return true;
         }
         catch(Exception ex){
+            Logger.getInstance().logToError(Arrays.toString(ex.getStackTrace()));
             return false;
         }
     }

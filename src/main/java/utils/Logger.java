@@ -1,6 +1,10 @@
 package utils;
 
 import burp.api.montoya.logging.Logging;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
+import java.text.SimpleDateFormat;
 
 public class Logger {
     private static Logger instance = null;
@@ -26,5 +30,12 @@ public class Logger {
 
     public void logToError(String msg){
         this.burpInternalLogging.logToError(msg);
+        FileSystemUtil.checkLogFile();
+        String timeStamp = new SimpleDateFormat("[yyyy-MM-dd HH:mm:ss:S] ").format(new java.util.Date());
+        try {
+            Files.writeString(FileSystemUtil.LOG_PATH.toPath(), timeStamp + msg + "\n", StandardOpenOption.APPEND);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

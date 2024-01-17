@@ -10,6 +10,7 @@ import gui.container.RuleContainer;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import model.SessionViewModel;
+import utils.Logger;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -57,8 +58,11 @@ public class ParameterHandler {
     }
 
     Map<Integer, InputParameter> combineListsIntoParameterEntityMap(List<Integer> keys, List<InputParameter> values) {
-        if (keys.size() != values.size())
-            throw new IllegalArgumentException ("Cannot combine lists with dissimilar sizes");
+        if (keys.size() != values.size()) {
+            IllegalArgumentException exception = new IllegalArgumentException("Cannot combine lists with dissimilar sizes");
+            Logger.getInstance().logToError(Arrays.toString(exception.getStackTrace()));
+            throw exception;
+        }
         Map<Integer, InputParameter> map = new Hashtable<>();
         for (int i=0; i<keys.size(); i++) {
             map.put(keys.get(i), values.get(i));
@@ -67,8 +71,11 @@ public class ParameterHandler {
     }
 
     Map<Integer, Url> combineListsIntoUrlEntityMap(List<Integer> keys, List<Url> values) {
-        if (keys.size() != values.size())
-            throw new IllegalArgumentException ("Cannot combine lists with dissimilar sizes");
+        if (keys.size() != values.size()) {
+            IllegalArgumentException exception = new IllegalArgumentException("Cannot combine lists with dissimilar sizes");
+            Logger.getInstance().logToError(Arrays.toString(exception.getStackTrace()));
+            throw exception;
+        }
         Map<Integer, Url> map = new Hashtable<>();
         for (int i=0; i<keys.size(); i++) {
             map.put(keys.get(i), values.get(i));
@@ -77,8 +84,11 @@ public class ParameterHandler {
     }
 
     Map<Integer, InputValue> combineListsIntoParameterOccurrenceMap(List<Integer> keys, List<InputValue> values) {
-        if (keys.size() != values.size())
-            throw new IllegalArgumentException ("Cannot combine lists with dissimilar sizes");
+        if (keys.size() != values.size()) {
+            IllegalArgumentException exception = new IllegalArgumentException("Cannot combine lists with dissimilar sizes");
+            Logger.getInstance().logToError(Arrays.toString(exception.getStackTrace()));
+            throw exception;
+        }
         Map<Integer, InputValue> map = new Hashtable<>();
         for (int i=0; i<keys.size(); i++) {
             map.put(keys.get(i), values.get(i));

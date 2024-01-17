@@ -49,6 +49,7 @@ public class PropertiesHandler {
                 this.isFirstTimeLoading = true;
                 this.isMatching = true;
             } catch (IOException e) {
+                Logger.getInstance().logToError(Arrays.toString(e.getStackTrace()));
                 throw new RuntimeException(e);
             }
         }
@@ -59,6 +60,7 @@ public class PropertiesHandler {
                 Logger.getInstance().logToOutput(String.format("Database is empty but Burp State is not. Saved Burp State Hash in %s\n To ensure proper working of the extension Create a new Burp Project", propertiesFile.toPath()));
                 this.isMatching = false;
             } catch (IOException e) {
+                Logger.getInstance().logToError(Arrays.toString(e.getStackTrace()));
                 throw new RuntimeException(e);
             }
         }
@@ -71,6 +73,7 @@ public class PropertiesHandler {
                 this.isFirstTimeLoading = true;
                 this.isMatching = true;
             } catch (IOException e) {
+                Logger.getInstance().logToError(Arrays.toString(e.getStackTrace()));
                 throw new RuntimeException(e);
             }
         } else {
@@ -82,6 +85,7 @@ public class PropertiesHandler {
                 String cutHash = prop.get(0).split(":")[1];
                 this.isMatching = cutHash.equals(savedHash);
             } catch (IOException e) {
+                Logger.getInstance().logToError(Arrays.toString(e.getStackTrace()));
                 throw new RuntimeException(e);
             }
         }
@@ -157,6 +161,7 @@ public class PropertiesHandler {
                     saveNoiseReductionRule(rule);
                 }
             } catch (IOException e) {
+                Logger.getInstance().logToError(Arrays.toString(e.getStackTrace()));
                 e.printStackTrace();
             }
         }
@@ -185,6 +190,7 @@ public class PropertiesHandler {
                 this.api.persistence().extensionData().setString("IsRightState", hashed);
                 Logger.getInstance().logToOutput("Saved new Hash in Burp State + " + propertiesFile.toPath());
             } catch (IOException e) {
+                Logger.getInstance().logToError(Arrays.toString(e.getStackTrace()));
                 throw new RuntimeException(e);
             }
             this.isMatching = true;

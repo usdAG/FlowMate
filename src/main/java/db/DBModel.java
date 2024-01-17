@@ -11,6 +11,8 @@ import org.neo4j.ogm.session.Session;
 import org.neo4j.ogm.session.SessionFactory;
 import org.neo4j.ogm.transaction.Transaction;
 import utils.Logger;
+
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -36,8 +38,9 @@ public class DBModel {
         this.session = newSession;
 
         if (this.session == null) {
-            Logger.getInstance().logToError("Couldn't open a database session.");
-            throw new RuntimeException("Session could not be opened!");
+            RuntimeException exception = new RuntimeException("Session could not be opened!");
+            Logger.getInstance().logToError(Arrays.toString(exception.getStackTrace()));
+            throw exception;
         }
     }
 
@@ -76,7 +79,9 @@ public class DBModel {
                 }
                 catch ( InterruptedException e )
                 {
-                    throw new TransactionFailureException( "Interrupted", e );
+                    TransactionFailureException exception = new TransactionFailureException( "Interrupted", e );
+                    Logger.getInstance().logToError(Arrays.toString(exception.getStackTrace()));
+                    throw exception;
                 }
             }
         }
@@ -85,14 +90,17 @@ public class DBModel {
 
         if ( txEx instanceof TransactionFailureException )
         {
+            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
             throw ((TransactionFailureException) txEx);
         }
         else if ( txEx instanceof Error )
         {
+            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
             throw ((Error) txEx);
         }
         else
         {
+            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
             throw ((RuntimeException) txEx);
         }
     }
@@ -131,7 +139,9 @@ public class DBModel {
                 }
                 catch ( InterruptedException e )
                 {
-                    throw new TransactionFailureException( "Interrupted", e );
+                    TransactionFailureException exception = new TransactionFailureException( "Interrupted", e );
+                    Logger.getInstance().logToError(Arrays.toString(exception.getStackTrace()));
+                    throw exception;
                 }
             }
         }
@@ -140,14 +150,17 @@ public class DBModel {
 
         if ( txEx instanceof TransactionFailureException )
         {
+            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
             throw ((TransactionFailureException) txEx);
         }
         else if ( txEx instanceof Error )
         {
+            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
             throw ((Error) txEx);
         }
         else
         {
+            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
             throw ((RuntimeException) txEx);
         }
     }
@@ -279,7 +292,9 @@ public class DBModel {
                 }
                 catch ( InterruptedException e )
                 {
-                    throw new TransactionFailureException( "Interrupted", e );
+                    TransactionFailureException exception = new TransactionFailureException( "Interrupted", e );
+                    Logger.getInstance().logToError(Arrays.toString(exception.getStackTrace()));
+                    throw exception;
                 }
             }
         }
@@ -288,14 +303,17 @@ public class DBModel {
 
         if ( txEx instanceof TransactionFailureException )
         {
+            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
             throw ((TransactionFailureException) txEx);
         }
         else if ( txEx instanceof Error )
         {
+            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
             throw ((Error) txEx);
         }
         else
         {
+            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
             throw ((RuntimeException) txEx);
         }
     }
