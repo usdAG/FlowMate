@@ -36,36 +36,8 @@ public class InputParameter {
         this.excludedByNoiseReduction = false;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public int getIdentifier(){
-        return this.identifier;
-    }
-
-    public String getDomain() {
-        return domain;
-    }
-
-    public String getType() {
-        return this.type;
-    }
-
-    public void addOccurence(InputValue occurrence) {
+    public void addOccurrence(InputValue occurrence) {
         this.occurrenceEntities.add(occurrence);
-    }
-
-    public List<InputValue> getOccurrenceEntities() {
-        return occurrenceEntities;
-    }
-
-    public boolean isExcludedByNoiseReduction() {
-        return excludedByNoiseReduction;
-    }
-
-    public void setExcludedByNoiseReduction(boolean excludedByNoiseReduction) {
-        this.excludedByNoiseReduction = excludedByNoiseReduction;
     }
 
     public Pattern getRegexMatchingValueByIdentifier(int identifier) {
@@ -104,6 +76,34 @@ public class InputParameter {
         var escaped = PatternEscape.escapeForRegex(value);
         var regex = String.format("(?i)([^\\s:]+):\\s+(.*%s.*)", escaped);
         return Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getIdentifier(){
+        return this.identifier;
+    }
+
+    public String getDomain() {
+        return domain;
+    }
+
+    public String getType() {
+        return this.type;
+    }
+
+    public List<InputValue> getOccurrenceEntities() {
+        return occurrenceEntities;
+    }
+
+    public boolean isExcludedByNoiseReduction() {
+        return excludedByNoiseReduction;
+    }
+
+    public void setExcludedByNoiseReduction(boolean excludedByNoiseReduction) {
+        this.excludedByNoiseReduction = excludedByNoiseReduction;
     }
 
 

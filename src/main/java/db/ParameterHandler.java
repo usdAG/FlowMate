@@ -125,7 +125,7 @@ public class ParameterHandler {
         // Check if the URL Entity already exists in the DB
         // If not, add it to the list of known Urls and save the Url + InputParameter in the DB
         if (!urlExistsInDB(newUrlEntity)) {
-            newInputParameterEntity.addOccurence(newInputValue);
+            newInputParameterEntity.addOccurrence(newInputValue);
             this.parameterValueStorage.put(newInputValue.getIdentifier(), newInputValue);
             newUrlEntity.addParameterFoundInUrl(newInputParameterEntity);
             this.urlStorage.put(newUrlEntity.getIdentifier(), newUrlEntity);
@@ -145,7 +145,7 @@ public class ParameterHandler {
             // Check if Relationship to InputParameter already exists, this is the case if the URLs get loaded at start
             if (!parameterExistsInUrlEntity(relatedUrlEntity, newInputParameterEntity)) {
                 if(!occurrenceAlreadyExists(newInputValue)) {
-                    newInputParameterEntity.addOccurence(newInputValue);
+                    newInputParameterEntity.addOccurrence(newInputValue);
                     this.parameterValueStorage.put(newInputValue.getIdentifier(), newInputValue);
                     GettingStartedView.numberOfParameterValues.setText(String.valueOf(parameterValueStorage.size()));
                     if (newInputValue.getSession().equals(sessionName)) {
@@ -161,7 +161,7 @@ public class ParameterHandler {
             } else {
                 InputParameter existingEntity = getExistingParameter(newInputParameterEntity.getIdentifier());
                 if (!occurrenceAlreadyExists(newInputValue)) {
-                    existingEntity.addOccurence(newInputValue);
+                    existingEntity.addOccurrence(newInputValue);
                     this.parameterValueStorage.put(newInputValue.getIdentifier(), newInputValue);
                     GettingStartedView.numberOfParameterValues.setText(String.valueOf(parameterValueStorage.size()));
                     DBModel.saveEntity(existingEntity);

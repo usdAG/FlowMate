@@ -88,12 +88,12 @@ public class ParameterMatch {
         return messageHash;
     }
 
-    public void setSession(String session) {
-        this.session = session;
-    }
-
     public InputValue getInputValue(){
         return this.valueMatched;
+    }
+
+    public void setSession(String session) {
+        this.session = session;
     }
 
     @Override

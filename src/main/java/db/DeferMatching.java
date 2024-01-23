@@ -144,7 +144,7 @@ public class DeferMatching implements PropertyChangeListener {
                         }
                         for (InputValue value : parameter.getOccurrenceEntities()) {
                             if (hash.equals(value.getMessageHash())) {
-                                realParam.addOccurence(value);
+                                realParam.addOccurrence(value);
                             }
                         }
                         if (realParam.getOccurrenceEntities().isEmpty()) {

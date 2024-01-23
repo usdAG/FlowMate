@@ -69,12 +69,12 @@ public class InputValue {
         return type;
     }
 
-    public void setSession(String session) {
-        this.session = session;
-    }
-
     public boolean isExcludedByNoiseReduction() {
         return excludedByNoiseReduction;
+    }
+
+    public void setSession(String session) {
+        this.session = session;
     }
 
     public void setExcludedByNoiseReduction(boolean excludedByNoiseReduction) {

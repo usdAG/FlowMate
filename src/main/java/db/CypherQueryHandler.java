@@ -40,7 +40,7 @@ public class CypherQueryHandler {
         List<MatchValue> matchValues = new ArrayList<>();
         while (resultIterator.hasNext()) {
             Map<?, ?> result = resultIterator.next();
-            if (result.get("m") != null)
+            if (result.get("mv") != null)
                 matchValues.add((MatchValue) result.get("mv"));
         }
         return matchValues;
