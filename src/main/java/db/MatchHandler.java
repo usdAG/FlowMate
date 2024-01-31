@@ -7,10 +7,9 @@ import db.entities.ParameterMatch;
 import db.entities.Session;
 import db.entities.Url;
 import gui.GettingStartedView;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import model.SessionViewModel;
 import utils.Logger;
+import utils.ObservableList;
 
 import java.util.*;
 
@@ -21,7 +20,6 @@ public class MatchHandler {
     public Hashtable<Integer, MatchValue> matchValueStorage;
     public Hashtable<Integer, ParameterMatch> parameterMatchStorage;
     public ObservableList<ParameterMatch> observableParameterMatchList;
-    public ObservableList<ParameterMatch> observableParameterMatchListSession;
     private boolean hasActiveSession = false;
     private String sessionName;
     private CrossSessionAudit crossSessionAudit;
@@ -38,8 +36,7 @@ public class MatchHandler {
         this.matchValueStorage = new Hashtable<>();
         this.parameterMatchStorage = new Hashtable<>();
         this.parameterHandler = parameterHandler;
-        this.observableParameterMatchList = FXCollections.observableArrayList();
-        this.observableParameterMatchListSession = FXCollections.observableArrayList();
+        this.observableParameterMatchList = new ObservableList<>();
         this.crossSessionAudit = crossSessionAudit;
         this.crossContentTypeAudit = crossContentTypeAudit;
         this.crossScopeAudit = crossScopeAudit;
@@ -161,9 +158,6 @@ public class MatchHandler {
                 }
             }
             this.observableParameterMatchList.add(newParameterMatchEntity);
-            if (newParameterMatchEntity.getSession().equals(sessionName)) {
-                this.observableParameterMatchListSession.add(newParameterMatchEntity);
-            }
         }
         return returnList;
     }
@@ -222,6 +216,5 @@ public class MatchHandler {
         matchValueStorage.clear();
         parameterMatchStorage.clear();
         observableParameterMatchList.clear();
-        observableParameterMatchListSession.clear();
     }
 }

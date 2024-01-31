@@ -118,7 +118,6 @@ public class DeferMatching implements PropertyChangeListener {
                 List<InputParameter> allInputParameters = pHandler.observableInputParameterList;
                 List<Object> allMatches = new ArrayList<>();
                 Set<Integer> duplicateIdentifiers = new HashSet<>();
-                Set<String> messageHashes = new HashSet<>();
                 List<InputParameter> inputParametersMatchingToHistory = new ArrayList<>();
                 Set<Integer> inputParamIdentifiers = new HashSet<>();
 
@@ -134,7 +133,6 @@ public class DeferMatching implements PropertyChangeListener {
 
                     HttpResponse response = parser.parseResponse(proxyResponse.originalResponse(), proxyResponse.finalRequest());
                     String hash = Hashing.sha1(proxyResponse.finalRequest().toByteArray().getBytes());
-                    messageHashes.add(hash);
 
                     for (InputParameter parameter : allInputParameters) {
                         InputParameter realParam = new InputParameter(parameter.getName(), parameter.getType(), parameter.getDomain());

@@ -6,6 +6,7 @@ import utils.Logger;
 import utils.PatternEscape;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -21,7 +22,6 @@ public class InputParameter {
 
     @Relationship(type = "OCCURS_WITH_VALUE", direction = Relationship.Direction.OUTGOING)
     private List<InputValue> occurrenceEntities = new ArrayList<>();
-
 
     // Empty Constructor needed for neo4J
     public InputParameter() {
@@ -60,6 +60,7 @@ public class InputParameter {
         try {
             return occurrence.get();
         } catch (Exception ex) {
+            Logger.getInstance().logToError(Arrays.toString(ex.getStackTrace()));
             return null;
         }
     }

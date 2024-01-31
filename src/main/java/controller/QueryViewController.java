@@ -8,13 +8,15 @@ import db.ParameterHandler;
 import db.entities.InputParameter;
 import db.entities.MatchValue;
 import db.entities.ParameterMatch;
+import events.ListChangeEvent;
+import events.ListChangeListener;
 import events.RuleContainerEvent;
 import events.RuleContainerListener;
 import gui.QueryView;
 import gui.container.*;
-import javafx.collections.ListChangeListener;
 import model.QueryViewModel;
 import utils.MessageHashToProxyId;
+import utils.ObservableList;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -90,7 +92,7 @@ public class QueryViewController implements ActionListener, ListSelectionListene
         // to be updated
         this.parameterHandler.observableInputParameterList.addListener(new ListChangeListener<InputParameter>() {
             @Override
-            public void onChanged(Change<? extends InputParameter> change) {
+            public void onChanged(ListChangeEvent<? extends InputParameter> change) {
                 while (change.next()) {
                     if (change.wasAdded()) {
                         updateParameters();
@@ -101,7 +103,7 @@ public class QueryViewController implements ActionListener, ListSelectionListene
 
         this.matchHandler.observableParameterMatchList.addListener(new ListChangeListener<ParameterMatch>() {
             @Override
-            public void onChanged(Change<? extends ParameterMatch> change) {
+            public void onChanged(ListChangeEvent<? extends ParameterMatch> change) {
                 while (change.next()) {
                     if (change.wasAdded()) {
                         updateParameters();
@@ -114,7 +116,7 @@ public class QueryViewController implements ActionListener, ListSelectionListene
     // ActionListener for sort-label, search-field and right-click menu
     @Override
     public void actionPerformed(ActionEvent actionEvent) {
-        if (actionEvent.getSource().equals(view.sortByLabel)) { // Change text on click for Ascending/Descending order
+        if (actionEvent.getSource().equals(view.sortByLabel)) { // change text on click for Ascending/Descending order
             if (view.sortByLabel.getText().equals("Desc ↓")) {
                 view.sortByLabel.setText("Asc ↑");
                 filterParameterList();
@@ -187,7 +189,7 @@ public class QueryViewController implements ActionListener, ListSelectionListene
 
     private void updateParameters() {
         Comparator<ParameterContainer> comparator = getSortSettings();
-        List<InputParameter> parameters = this.parameterHandler.observableInputParameterList;
+        List<InputParameter> parameters = this.parameterHandler.observableInputParameterList.stream().toList();
         Vector<ParameterContainer> parameterContainerVector;
         parameterContainerVector = new Vector<>(
                 containerConverter.parameterToContainer(parameters.stream().toList())
@@ -325,7 +327,8 @@ public class QueryViewController implements ActionListener, ListSelectionListene
             ruleContainer.setActive(false);
         }
         this.parameterHandler.updateParameterExclusion(ruleContainer);
-        DBModel.saveBulk(Collections.singletonList(this.parameterHandler.observableInputParameterList));
+        List<Object> bulkSaveList = new ArrayList<>(this.parameterHandler.observableInputParameterList);
+        DBModel.saveBulk(bulkSaveList);
         updateParameters();
     }
 

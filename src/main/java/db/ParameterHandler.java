@@ -7,10 +7,9 @@ import db.entities.Session;
 import db.entities.Url;
 import gui.GettingStartedView;
 import gui.container.RuleContainer;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import model.SessionViewModel;
 import utils.Logger;
+import utils.ObservableList;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -23,16 +22,14 @@ public class ParameterHandler {
     public Hashtable<Integer, InputParameter> parameterStorage;
     public Hashtable<Integer, InputValue> parameterValueStorage;
     public ObservableList<InputParameter> observableInputParameterList;
-    public ObservableList<InputParameter> observableInputParameterListSession;
-
     private boolean hasActiveSession = false;
     private String sessionName;
+
     public ParameterHandler() {
         this.urlStorage = new Hashtable<>();
         this.parameterStorage = new Hashtable<>();
         this.parameterValueStorage = new Hashtable<>();
-        this.observableInputParameterList = FXCollections.observableArrayList();
-        this.observableInputParameterListSession = FXCollections.observableArrayList();
+        this.observableInputParameterList = new ObservableList<>();
         loadUrls();
         loadParameters();
         loadParameterOccurrences();
@@ -136,9 +133,6 @@ public class ParameterHandler {
             DBModel.saveEntity(newInputParameterEntity);
             DBModel.saveEntity(newUrlEntity);
             this.observableInputParameterList.add(newInputParameterEntity);
-            if (newInputValue.getSession().equals(sessionName)) {
-                this.observableInputParameterListSession.add(newInputParameterEntity);
-            }
         } else {
             // If the URL Entity already exists get the correct Url Entity where the InputParameter Entity is to be added
             Url relatedUrlEntity = getUrlEntityByParameterUrl(parameterHelper.getUrlFound());
@@ -148,9 +142,6 @@ public class ParameterHandler {
                     newInputParameterEntity.addOccurrence(newInputValue);
                     this.parameterValueStorage.put(newInputValue.getIdentifier(), newInputValue);
                     GettingStartedView.numberOfParameterValues.setText(String.valueOf(parameterValueStorage.size()));
-                    if (newInputValue.getSession().equals(sessionName)) {
-                        this.observableInputParameterListSession.add(newInputParameterEntity);
-                    }
                 }
                 relatedUrlEntity.addParameterFoundInUrl(newInputParameterEntity);
                 parameterStorage.put(newInputParameterEntity.getIdentifier(), newInputParameterEntity);
@@ -166,9 +157,6 @@ public class ParameterHandler {
                     GettingStartedView.numberOfParameterValues.setText(String.valueOf(parameterValueStorage.size()));
                     DBModel.saveEntity(existingEntity);
                     this.observableInputParameterList.add(newInputParameterEntity);
-                    if (newInputValue.getSession().equals(sessionName)) {
-                        this.observableInputParameterListSession.add(newInputParameterEntity);
-                    }
                 }
             }
         }
@@ -235,7 +223,6 @@ public class ParameterHandler {
         parameterValueStorage.clear();
         urlStorage.clear();
         observableInputParameterList.clear();
-        observableInputParameterListSession.clear();
     }
 
     public void updateParameterExclusion(RuleContainer ruleContainer) {

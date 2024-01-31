@@ -19,7 +19,7 @@ public class AuditFindingView extends JScrollPane {
     private MontoyaApi api;
     private JPanel panel;
     private JList<AuditFinding> listOfFindings;
-    private JEditorPane desccriptionPane;
+    private JEditorPane descriptionPane;
     private JScrollPane findingsOverviewScrollPane;
     private JScrollPane findingDescriptionScrollPane;
     private Vector<AuditFinding> findings;
@@ -43,10 +43,10 @@ public class AuditFindingView extends JScrollPane {
         this.findingsOverviewScrollPane.setMinimumSize(new Dimension(700, 800));
         this.findingsOverviewScrollPane.setMaximumSize(new Dimension(700, 800));
 
-        this.desccriptionPane = new JEditorPane();
-        this.desccriptionPane.setEditable(false);
-        this.desccriptionPane.setContentType("text/html");
-        this.findingDescriptionScrollPane = new JScrollPane(desccriptionPane);
+        this.descriptionPane = new JEditorPane();
+        this.descriptionPane.setEditable(false);
+        this.descriptionPane.setContentType("text/html");
+        this.findingDescriptionScrollPane = new JScrollPane(descriptionPane);
         this.findingDescriptionScrollPane.setMinimumSize(new Dimension(500, 800));
         this.findingDescriptionScrollPane.setMaximumSize(new Dimension(500, 800));
 
@@ -61,7 +61,7 @@ public class AuditFindingView extends JScrollPane {
                 if (!listSelectionEvent.getValueIsAdjusting()) {
                     var finding = listOfFindings.getSelectedValue();
                     if (finding != null)
-                        desccriptionPane.setText(finding.getLongDescription());
+                        descriptionPane.setText(finding.getLongDescription());
                 }
             }
         });
@@ -94,7 +94,7 @@ public class AuditFindingView extends JScrollPane {
     }
 
     private void clearDescriptionPane() {
-        this.desccriptionPane.setText("");
+        this.descriptionPane.setText("");
         this.panel.revalidate();
         this.panel.repaint();
     }
