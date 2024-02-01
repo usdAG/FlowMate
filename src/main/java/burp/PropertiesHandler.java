@@ -151,7 +151,6 @@ public class PropertiesHandler {
     public void setDefaultRulesOnFirstLoad() {
         if (isFirstTimeLoading && loadNoiseReductionRules().isEmpty()) {
             ObjectMapper objectMapper = new ObjectMapper();
-            this.isFirstTimeLoading = false;
             try {
                 String filepath = FileSystemUtil.DEFAULT_RULES_PATH;
                 URL fileUrl = this.getClass().getResource(filepath);
