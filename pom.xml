@@ -47,13 +47,13 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-bolt</artifactId>
-            <version>5.15.0</version>
+            <version>5.16.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.neo4j/neo4j -->
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j</artifactId>
-            <version>5.15.0</version>
+            <version>5.16.0</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
@@ -74,13 +74,13 @@
         <dependency>
             <groupId>org.neo4j.app</groupId>
             <artifactId>neo4j-server</artifactId>
-            <version>5.15.0</version>
+            <version>5.16.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.neo4j/neo4j-native -->
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-native</artifactId>
-            <version>5.15.0</version>
+            <version>5.16.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.jsoup/jsoup -->
         <dependency>
