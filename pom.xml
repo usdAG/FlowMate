@@ -129,7 +129,7 @@
         <dependency>
             <groupId>org.commonmark</groupId>
             <artifactId>commonmark</artifactId>
-            <version>0.20.0</version>
+            <version>0.21.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.github.wnameless.json/json-flattener -->
         <dependency>
