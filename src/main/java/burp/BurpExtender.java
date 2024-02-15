@@ -69,14 +69,14 @@ public class BurpExtender implements BurpExtension  {
             throw new RuntimeException(e);
         }
 
-        this.auditFindingView = new AuditFindingView(this.api);
+        this.propertiesHandler = new PropertiesHandler(this.api);
+        this.auditFindingView = new AuditFindingView(this.api, propertiesHandler);
         this.crossSessionAudit = new CrossSessionAudit(this.auditFindingView);
         this.crossContentTypeAudit = new CrossContentTypeAudit(this.auditFindingView);
         this.crossScopeAudit = new CrossScopeAudit(this.auditFindingView);
         this.headerMatchAudit = new HeaderMatchAudit(this.auditFindingView);
         this.longDistanceMatchAudit = new LongDistanceMatchAudit(this.auditFindingView, this.api);
         this.keywordMatchAudit = new KeywordMatchAudit(this.auditFindingView);
-        this.propertiesHandler = new PropertiesHandler(this.api);
         this.regexMatcher = new RegexMatcher(this.propertiesHandler);
         this.listener = new HttpListener(api, crossSessionAudit, crossContentTypeAudit, crossScopeAudit, headerMatchAudit, longDistanceMatchAudit, keywordMatchAudit);
         this.deferMatching = new DeferMatching(this.api, this.listener.respParser, this.listener.parameterHandler, this.listener.matchHandler);

@@ -1,6 +1,7 @@
 package gui;
 
 import audit.AuditFinding;
+import burp.PropertiesHandler;
 import burp.api.montoya.MontoyaApi;
 import gui.renderer.AuditFindingListCellRenderer;
 import net.miginfocom.swing.MigLayout;
@@ -17,6 +18,7 @@ import java.util.Vector;
 public class AuditFindingView extends JScrollPane {
     
     private MontoyaApi api;
+    private PropertiesHandler propertiesHandler;
     private JPanel panel;
     private JList<AuditFinding> listOfFindings;
     private JEditorPane desccriptionPane;
@@ -25,12 +27,14 @@ public class AuditFindingView extends JScrollPane {
     private Vector<AuditFinding> findings;
     private ArrayList<Integer> duplicates;
 
-    public AuditFindingView(MontoyaApi api){
+    public AuditFindingView(MontoyaApi api, PropertiesHandler propertiesHandler){
         this.api = api;
+        this.propertiesHandler = propertiesHandler;
         this.findings = new Vector<AuditFinding>();
         this.duplicates = new ArrayList<>();
         this.initialize();
         this.registerListener();
+        loadAuditFindings();
     }
 
     private void initialize(){
@@ -71,11 +75,16 @@ public class AuditFindingView extends JScrollPane {
         if (!this.duplicates.contains(Objects.hash(finding.getShortDescription(), finding.getLongDescription()))) {
             this.duplicates.add(Objects.hash(finding.getShortDescription(), finding.getLongDescription()));
             this.findings.add(finding);
+            this.propertiesHandler.saveAuditFinding(finding);
+            this.renderFindings();
         }
     }
 
-    public void addFinding(List<AuditFinding> newFindings){
-        this.findings.addAll(newFindings);
+    public void addFindings(List<AuditFinding> newFindings){
+        for (AuditFinding finding : newFindings) {
+            this.addFinding(finding);
+        }
+        this.renderFindings();
     }
 
     public Vector<AuditFinding> getAuditFindings(){
@@ -88,9 +97,16 @@ public class AuditFindingView extends JScrollPane {
         this.panel.repaint();
     }
 
-    public void setAuditFindings(List<AuditFinding> list){
+    public void setAuditFindings(List<AuditFinding> list) {
         this.findings.clear();
-        this.addFinding(list);
+        this.propertiesHandler.deleteAuditFindings();
+        this.addFindings(list);
+        this.renderFindings();
+    }
+
+    public void loadAuditFindings() {
+        List<AuditFinding> auditFindings = this.propertiesHandler.loadAuditFindings();
+        this.addFindings(auditFindings);
     }
 
     private void clearDescriptionPane() {
@@ -103,5 +119,6 @@ public class AuditFindingView extends JScrollPane {
         this.setAuditFindings(new ArrayList<>());
         this.clearDescriptionPane();
         this.duplicates.clear();
+        this.propertiesHandler.deleteAuditFindings();
     }
 }

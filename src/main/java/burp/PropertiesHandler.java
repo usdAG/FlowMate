@@ -1,10 +1,13 @@
 package burp;
 
+import audit.AuditFinding;
 import burp.api.montoya.MontoyaApi;
+import burp.api.montoya.core.ByteArray;
 import burp.api.montoya.persistence.PersistedList;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gui.container.RuleContainer;
+import org.apache.commons.lang3.SerializationUtils;
 import utils.FileSystemUtil;
 import utils.Logger;
 
@@ -203,6 +206,34 @@ public class PropertiesHandler {
     public int loadHistoryStartValueInState() {
         var size = this.api.persistence().extensionData().getInteger("historyStart");
         return Objects.requireNonNullElse(size, 0);
+    }
+
+    public void saveAllAuditFindings(List<AuditFinding> findings) {
+        for (AuditFinding finding : findings) {
+            saveAuditFinding(finding);
+        }
+    }
+    public void saveAuditFinding(AuditFinding finding) {
+        byte[] data = SerializationUtils.serialize(finding);
+        this.api.persistence().extensionData().setByteArray(finding.getHash(), ByteArray.byteArray(data));
+    }
+
+    public List<AuditFinding> loadAuditFindings() {
+        Set<String> keys = this.api.persistence().extensionData().byteArrayKeys();
+        List<AuditFinding> findings = new ArrayList<>();
+        for (String key : keys) {
+            ByteArray auditFindingAsByteArray = this.api.persistence().extensionData().getByteArray(key);
+            AuditFinding auditFinding = SerializationUtils.deserialize(auditFindingAsByteArray.getBytes());
+            findings.add(auditFinding);
+        }
+        return findings;
+    }
+
+    public void deleteAuditFindings() {
+        Set<String> keys = this.api.persistence().extensionData().byteArrayKeys();
+        for (String key : keys) {
+            this.api.persistence().extensionData().deleteByteArray(key);
+        }
     }
 
 }
