@@ -9,10 +9,17 @@ This tool operates from either a black-box or grey-box perspective, eliminating 
 ## Key Features
 Some key features of FlowMate are:
 - Track parameter values of all applications added to the BurpSuite project scope.
+- Matching of parameters can be performed live while browsing, or deferred in order to reduce loadtimes while manually browsing the application.
 - Store all data points in a local and file-based Neo4J instance.
 - Integrates the Neo4J Browser directly to visualize and browse the resulting graph. No installation needed.
 - Enables you to define *Sessions* within the plugin to ease tracking cross-session parameters.
 - Performs automatic audit steps on the created graph to generate Findings with points of interest.
+- Has the capability to define filters for parameters in order to reduce noise in the resulting data flow graph. 
+
+## Demo Video 
+A video demonstrating the end-to-end use of FlowMate is availalbe on our YouTube channel.
+
+[![FlowMate Demo Video](https://img.youtube.com/vi/BJhRhGmDATw/0.jpg)](https://www.youtube.com/watch?v=BJhRhGmDATw)
 
 ## How to Use
 **FlowMate** is used best during the reconnaissance phase in a security assessment. The following steps explain on how to get started:
@@ -20,7 +27,7 @@ Some key features of FlowMate are:
 2. After loading finished add the target application to the BurpSuite internal *Scope*. Only in-scope targets are tracked by FlowMate
 3. Activate the detection by checking both boxes on the *Getting Started* tab of FlowMate
 4. Browse the application following the *General best practices* below
-5. Stop the detection before starting manual analysis. This prevents payloads and duplicate values from polluting the graph.
+5. Stop the detection before starting manual analysis. This prevents payloads and duplicate values from polluting the graph
 6. Profit from the data flow graph created for you!
 
 ### What can you get from the graph?
