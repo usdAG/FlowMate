@@ -1,9 +1,7 @@
 package db;
 
 import audit.*;
-import burp.HttpListener;
 import burp.api.montoya.MontoyaApi;
-import controller.SessionViewController;
 import db.entities.MatchValue;
 import db.entities.ParameterMatch;
 import db.entities.Session;
@@ -12,7 +10,6 @@ import gui.GettingStartedView;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import model.SessionViewModel;
-import org.neo4j.ogm.model.Result;
 import utils.Logger;
 
 import java.util.*;
@@ -219,6 +216,10 @@ public class MatchHandler {
 
     public void setSessionName(String sessionName) {
         this.sessionName = sessionName;
+    }
+
+    public String getSessionName() {
+        return sessionName;
     }
 
     public void clearAllStorages() {

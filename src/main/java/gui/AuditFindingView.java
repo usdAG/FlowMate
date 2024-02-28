@@ -100,13 +100,18 @@ public class AuditFindingView extends JScrollPane {
     public void setAuditFindings(List<AuditFinding> list) {
         this.findings.clear();
         this.propertiesHandler.deleteAuditFindings();
+        this.duplicates.clear();
         this.addFindings(list);
         this.renderFindings();
     }
 
     public void loadAuditFindings() {
         List<AuditFinding> auditFindings = this.propertiesHandler.loadAuditFindings();
-        this.addFindings(auditFindings);
+        for (AuditFinding finding : auditFindings) {
+            this.duplicates.add(Objects.hash(finding.getShortDescription(), finding.getLongDescription()));
+            this.findings.add(finding);
+        }
+        renderFindings();
     }
 
     private void clearDescriptionPane() {

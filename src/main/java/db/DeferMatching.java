@@ -9,6 +9,7 @@ import burp.api.montoya.proxy.ProxyHttpRequestResponse;
 import db.entities.*;
 import events.DeferMatchingFinishedEvent;
 import events.DeferMatchingFinishedListener;
+import model.SessionViewModel;
 import net.miginfocom.swing.MigLayout;
 import utils.Hashing;
 import utils.Logger;
@@ -127,7 +128,16 @@ public class DeferMatching implements PropertyChangeListener {
                 setProgress(0);
                 int listSize = proxyList.size();
 
+                List<Session> sessions = SessionViewModel.sessionTable.values().stream().toList();
+
+                String currentSessionName = matchHandler.getSessionName();
+
+                HashMap<Integer, String> hashMap = correctSessionName(sessions, listSize);
+
                 for (int i = 0; i < listSize; i++) {
+                    if (!matchHandler.getSessionName().equals(hashMap.get(i))) {
+                        matchHandler.setSessionName(hashMap.get(i));
+                    }
 
                     ProxyHttpRequestResponse proxyResponse = proxyList.get(i);
                     progress = (int) ((i + 1) / (double) listSize * 100);
@@ -178,12 +188,27 @@ public class DeferMatching implements PropertyChangeListener {
                 }
                 taskOutput.append("Saving Entities in Database...\n");
                 DBModel.saveBulk(allMatches);
+                matchHandler.setSessionName(currentSessionName);
                 return null;
             } catch (Exception e) {
                 Logger.getInstance().logToError(Arrays.toString(e.getStackTrace()));
                 e.printStackTrace();
                 return null;
             }
+        }
+
+        private HashMap<Integer, String> correctSessionName(List<Session> sessions, int listSize) {
+            HashMap<Integer, String> hashMap = new HashMap<>();
+            for (int i = 0; i < listSize; i++) {
+                int historyId = i + BurpExtender.historyStart - 1;
+                for (Session session : sessions) {
+                    if ((historyId >= session.getLowestHistoryId() - 2 && historyId < session.getHighestHistoryId())) {
+                        hashMap.put(i, session.getName());
+                        break;
+                    }
+                }
+            }
+            return hashMap;
         }
 
         @Override

@@ -1,16 +1,18 @@
 package burp;
 
-import audit.AuditFinding;
+import audit.*;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.core.ByteArray;
 import burp.api.montoya.persistence.PersistedList;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gui.container.RuleContainer;
+import org.apache.commons.io.serialization.ValidatingObjectInputStream;
 import org.apache.commons.lang3.SerializationUtils;
 import utils.FileSystemUtil;
 import utils.Logger;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -208,24 +210,32 @@ public class PropertiesHandler {
         return Objects.requireNonNullElse(size, 0);
     }
 
-    public void saveAllAuditFindings(List<AuditFinding> findings) {
-        for (AuditFinding finding : findings) {
-            saveAuditFinding(finding);
-        }
-    }
     public void saveAuditFinding(AuditFinding finding) {
         byte[] data = SerializationUtils.serialize(finding);
         this.api.persistence().extensionData().setByteArray(finding.getHash(), ByteArray.byteArray(data));
     }
 
     public List<AuditFinding> loadAuditFindings() {
+        Logger.getInstance().logToOutput("Loading Audit Findings...");
         Set<String> keys = this.api.persistence().extensionData().byteArrayKeys();
         List<AuditFinding> findings = new ArrayList<>();
         for (String key : keys) {
             ByteArray auditFindingAsByteArray = this.api.persistence().extensionData().getByteArray(key);
-            AuditFinding auditFinding = SerializationUtils.deserialize(auditFindingAsByteArray.getBytes());
-            findings.add(auditFinding);
+            try {
+                org.apache.commons.io.serialization.ValidatingObjectInputStream in =
+                        new ValidatingObjectInputStream(new ByteArrayInputStream(auditFindingAsByteArray.getBytes()));
+                in.accept(java.lang.Enum.class, AuditFinding.class, AuditFinding.FindingSeverity.class, CrossContentTypeAuditFinding.class,
+                        CrossScopeAuditFinding.class, CrossSessionAuditFinding.class, HeaderMatchAuditFinding.class, KeywordMatchAuditFinding.class,
+                        LongDistanceMatchAuditFinding.class);
+                AuditFinding auditFinding = (AuditFinding) in.readObject();
+                in.close();
+                findings.add(auditFinding);
+            } catch (IOException | ClassNotFoundException e) {
+                Logger.getInstance().logToOutput("Audit Finding could not be loaded! View Error log for more information");
+                Logger.getInstance().logToError(Arrays.toString(e.getStackTrace()));
+            }
         }
+        Logger.getInstance().logToOutput("Loading Audit Findings finished");
         return findings;
     }
 

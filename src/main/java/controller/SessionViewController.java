@@ -234,6 +234,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
             int realLowestId = sessionHelpers.stream().sorted(Comparator.comparing(SessionHelper::getLowestId)).toList().get(0).getLowestId();
             if (identifiedSessions.size() == 1 && realLowestId > 1) {
                 createUnauthSession(lowestId, realLowestId, sessionParameters);
+                continue;
             }
             if (sessionCounter == 1 && lowestId > 1) {
                 createUnauthSession(lowestId, highestId, sessionParameters);
@@ -373,6 +374,8 @@ public class SessionViewController implements ActionListener, ListSelectionListe
             }
         }
         lastSession.setSessionParameter(changedParameters.stream().toList());
+        int lasHighestId = lastSession.getHighestHistoryId();
+        lastSession.setHighestHistoryId(lasHighestId - 1);
         for (ParsedHttpParameter param : parameters) {
             newParameters.add(new SessionParameter(param.name(), param.value(), param.type().name(), "No new Value", "No new Value"));
         }
@@ -381,7 +384,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
         Session newSession = new Session(sessionName, messageId, messageId, newParameters);
         String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date());
         DefaultListModel<SessionContainer> listModel = (DefaultListModel<SessionContainer>) sessionJList.getModel();
-        listModel.get(sessionCounter - 2).updateRange(messageId);
+        listModel.get(sessionCounter - 2).updateRange(messageId - 1);
         listModel.addElement(new SessionContainer(sessionName, timeStamp, messageId, messageId));
         sessionJList.revalidate();
         sessionJList.repaint();
