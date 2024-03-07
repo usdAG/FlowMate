@@ -124,6 +124,14 @@ public class DeferMatching implements PropertyChangeListener {
                 List<InputParameter> inputParametersMatchingToHistory = new ArrayList<>();
                 Set<Integer> inputParamIdentifiers = new HashSet<>();
 
+                List<ProxyHttpRequestResponse> tempProxyList = new ArrayList<>(proxyList);
+
+                for (ProxyHttpRequestResponse requestResponse : tempProxyList) {
+                    if (!api.scope().isInScope(requestResponse.finalRequest().url())) {
+                        proxyList.remove(requestResponse);
+                    }
+                }
+
                 int progress = 0;
                 setProgress(0);
                 int listSize = proxyList.size();
