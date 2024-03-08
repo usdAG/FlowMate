@@ -2,7 +2,7 @@ package db.entities;
 
 import org.neo4j.ogm.annotation.Id;
 import org.neo4j.ogm.annotation.Relationship;
-
+import org.neo4j.ogm.annotation.Transient;
 import utils.Logger;
 import utils.PatternEscape;
 
@@ -18,6 +18,8 @@ public class InputParameter {
     private String type;
     private String domain;
 
+    private boolean excludedByNoiseReduction;
+
     @Relationship(type = "OCCURS_WITH_VALUE", direction = Relationship.Direction.OUTGOING)
     private List<InputValue> occurrenceEntities = new ArrayList<>();
 
@@ -32,6 +34,7 @@ public class InputParameter {
         this.type = type;
         this.domain = domain;
         this.identifier = Objects.hash(name, type, domain);
+        this.excludedByNoiseReduction = false;
     }
 
     public String getName() {
@@ -58,6 +61,14 @@ public class InputParameter {
         return occurrenceEntities;
     }
 
+    public boolean isExcludedByNoiseReduction() {
+        return excludedByNoiseReduction;
+    }
+
+    public void setExcludedByNoiseReduction(boolean excludedByNoiseReduction) {
+        this.excludedByNoiseReduction = excludedByNoiseReduction;
+    }
+
     public Pattern getRegexMatchingValueByIdentifier(int identifier) {
         var occurrence = this.getOccurrenceByIdentifier(identifier);
         if(occurrence == null){
@@ -81,6 +92,21 @@ public class InputParameter {
             return null;
         }
     }
+
+    public Pattern getRegexForHeaderMatchingValueByIdentifier(int identifier) {
+        var occurrence = this.getOccurrenceByIdentifier(identifier);
+        if(occurrence == null){
+            Logger.getInstance().logToOutput("[InputParameter] The occurrence with the sequence number specified doesn't exist");
+            return null;
+        }
+
+        var value = occurrence.getValue();
+
+        var escaped = PatternEscape.escapeForRegex(value);
+        var regex = String.format("(?i)([^\\s:]+):\\s+(.*%s.*)", escaped);
+        return Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+    }
+
 
     @Override
     public String toString() {

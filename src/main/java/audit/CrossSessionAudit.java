@@ -1,13 +1,15 @@
 package audit;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Vector;
-
-import audit.AuditFinding.FindingSeverity;
+import db.DBModel;
 import db.MatchHelperClass;
+import db.entities.InputValue;
 import db.entities.ParameterMatch;
+import db.entities.Session;
 import gui.AuditFindingView;
+import org.neo4j.ogm.model.Result;
+import scala.reflect.macros.Universe;
+
+import java.util.*;
 
 public class CrossSessionAudit {
     

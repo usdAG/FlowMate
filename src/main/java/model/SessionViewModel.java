@@ -2,6 +2,7 @@ package model;
 
 import burp.ContainerConverter;
 import burp.HttpListener;
+import burp.RegexMatcher;
 import burp.api.montoya.MontoyaApi;
 import db.DBModel;
 import db.MatchHandler;
@@ -10,9 +11,9 @@ import db.entities.*;
 import gui.container.SessionContainer;
 import org.neo4j.ogm.model.Result;
 import session.IdentifiedSession;
-import session.Session;
+import db.entities.Session;
 import session.SessionHelper;
-import session.SessionParameter;
+import db.entities.SessionParameter;
 import utils.Hashing;
 
 import java.util.*;
@@ -105,14 +106,30 @@ public class SessionViewModel {
     }
 
     public void changeDatabaseEntriesAccordingToSession(String sessionName, int lowestHistoryId, int highestHistoryId) {
-        List<Integer> nodesToChange = getIdentifiersForSessionNodes(lowestHistoryId, highestHistoryId);
-        Map<String, String> values = Collections.singletonMap("sessionName", sessionName);
-        String query = "UNWIND %s as X ".formatted(Arrays.toString(nodesToChange.toArray())) +
-                "MATCH (n {identifier: X}) " +
-                "SET n.session = $sessionName " +
-                "RETURN n";
-        DBModel.executeCypher(query, values);
-        changeInStorages(nodesToChange, sessionName);
+        List<InputValue> inputValues = getInputValuesForSessionRange(sessionName, lowestHistoryId, highestHistoryId);
+        List<ParameterMatch> parameterMatches = getParameterMatchesForSessionRange(sessionName, lowestHistoryId, highestHistoryId);
+        List<MatchValue> matchValues = getMatchValuesForSessionRange(sessionName, lowestHistoryId, highestHistoryId);
+
+        if (!(inputValues == null) && !(parameterMatches == null) && !(matchValues == null)) {
+            List<Integer> nodesToChange = getIdentifiersFromNodes(inputValues, parameterMatches, matchValues);
+            Map<String, String> values = Collections.singletonMap("sessionName", sessionName);
+            String query = "UNWIND %s as X ".formatted(Arrays.toString(nodesToChange.toArray())) +
+                    "MATCH (n {identifier: X}) " +
+                    "SET n.session = $sessionName " +
+                    "RETURN n";
+            DBModel.executeCypher(query, values);
+            Session sessionToSave = connectEntitiesToSessionNode(sessionName, inputValues, parameterMatches, matchValues);
+            DBModel.saveSession(sessionToSave);
+            changeInStorages(nodesToChange, sessionName);
+        }
+    }
+
+    public void renameSession(String oldName, String newName) {
+        Session session = sessionTable.get(oldName);
+        sessionTable.remove(oldName);
+        session.setName(newName);
+        sessionTable.put(newName, session);
+        DBModel.saveSession(session);
     }
 
     private void changeInStorages(List<Integer> nodesToChange, String sessionName) {
@@ -163,63 +180,106 @@ public class SessionViewModel {
         }
     }
 
-    private List<Integer> getIdentifiersForSessionNodes(int lowestHistoryId, int highestHistoryId) {
-        int[] array = new int[(highestHistoryId - lowestHistoryId) + 1];
-        int counter = lowestHistoryId;
-        for (int i = 0; i < array.length; i++) {
-            array[i] = counter++;
-        }
+    private List<InputValue> getInputValuesForSessionRange(String sessionName, int lowestHistoryId, int highestHistoryId) {
+        List<InputValue> inputValues = new ArrayList<>();
 
-        List<String> messageIds = new ArrayList<>();
-        var proxyList = api.proxy().history();
-        for (int i = lowestHistoryId; i <= highestHistoryId; i++) {
-            if (i == proxyList.size()) {
-                messageIds.add("\""+ Hashing.sha1(proxyList.get(i-1).finalRequest().toByteArray().getBytes())+"\"");
-            } else {
-                messageIds.add("\""+Hashing.sha1(proxyList.get(i).finalRequest().toByteArray().getBytes())+"\"");
-            }
+        String messageHashesArray = identifyMessageHashes(lowestHistoryId, highestHistoryId);
+        if (messageHashesArray.isEmpty()) {
+            return null;
         }
-
-        String messagesArray = Arrays.toString(messageIds.toArray());
-        List<Integer> paramValuesIdentifiers = new ArrayList<>();
-        String queryParameterValue = "UNWIND %s as X ".formatted(messagesArray) +
+        String query = "UNWIND %s as X ".formatted(messageHashesArray) +
                 "Match (n:InputValue {messageHash: X}) " +
                 "RETURN n";
-        Result queryResultParameterValues = DBModel.query(queryParameterValue, Map.of());
+        Result queryResultParameterValues = DBModel.query(query, Map.of());
         Iterator<Map<String, Object>> resultIterator = queryResultParameterValues.queryResults().iterator();
         while (resultIterator.hasNext()) {
             Map<?, ?> result = resultIterator.next();
-            paramValuesIdentifiers.add(((InputValue) result.get("n")).getIdentifier());
+            InputValue inputValue = (InputValue) result.get("n");
+            inputValue.setSession(sessionName);
+            inputValues.add(inputValue);
         }
 
-        String queryParameterMatches = "UNWIND %s as X ".formatted(messagesArray) +
+        return inputValues;
+    }
+
+    private List<ParameterMatch> getParameterMatchesForSessionRange(String sessionName, int lowestHistoryId, int highestHistoryId) {
+        List<ParameterMatch> parameterMatches = new ArrayList<>();
+
+        String messageHashesArray = identifyMessageHashes(lowestHistoryId, highestHistoryId);
+        if (messageHashesArray.isEmpty()) {
+            return null;
+        }
+        String query = "UNWIND %s as X ".formatted(messageHashesArray) +
                 "Match (n:ParameterMatch {messageHash: X}) " +
                 "RETURN n";
-        Result queryResultParameterMatches = DBModel.query(queryParameterMatches, Map.of());
-        Iterator<Map<String, Object>> resultIterator2 = queryResultParameterMatches.queryResults().iterator();
-        List<Integer> paramMatchesIdentifiers = new ArrayList<>();
-        while (resultIterator2.hasNext()) {
-            Map<?, ?> result = resultIterator2.next();
-            paramMatchesIdentifiers.add(((ParameterMatch) result.get("n")).getIdentifier());
+        Result queryResultParameterValues = DBModel.query(query, Map.of());
+        Iterator<Map<String, Object>> resultIterator = queryResultParameterValues.queryResults().iterator();
+        while (resultIterator.hasNext()) {
+            Map<?, ?> result = resultIterator.next();
+            ParameterMatch parameterMatch = (ParameterMatch) result.get("n");
+            parameterMatch.setSession(sessionName);
+            parameterMatches.add(parameterMatch);
         }
 
-        String queryMatchValues = "UNWIND %s as X ".formatted(messagesArray) +
+        return parameterMatches;
+    }
+
+    private List<MatchValue> getMatchValuesForSessionRange(String sessionName, int lowestHistoryId, int highestHistoryId) {
+        List<MatchValue> matchValues = new ArrayList<>();
+
+        String messageHashesArray = identifyMessageHashes(lowestHistoryId, highestHistoryId);
+        if (messageHashesArray.isEmpty()) {
+            return null;
+        }
+        String query = "UNWIND %s as X ".formatted(messageHashesArray) +
                 "Match (n:MatchValue {messageHash: X}) " +
                 "RETURN n";
-        Result queryResultMatchValues = DBModel.query(queryMatchValues, Map.of());
-        Iterator<Map<String, Object>> resultIterator3 = queryResultMatchValues.queryResults().iterator();
-        List<Integer> matchValuesIdentifiers = new ArrayList<>();
-        while (resultIterator3.hasNext()) {
-            Map<?, ?> result = resultIterator3.next();
-            matchValuesIdentifiers.add(((MatchValue) result.get("n")).getIdentifier());
+        Result queryResultMatchValues = DBModel.query(query, Map.of());
+        Iterator<Map<String, Object>> resultIterator = queryResultMatchValues.queryResults().iterator();
+        while (resultIterator.hasNext()) {
+            Map<?, ?> result = resultIterator.next();
+            MatchValue matchValue = (MatchValue) result.get("n");
+            matchValue.setSession(sessionName);
+            matchValues.add(matchValue);
         }
 
-        List<Integer> allIdentifiers = new ArrayList<>();
-        allIdentifiers.addAll(paramValuesIdentifiers);
-        allIdentifiers.addAll(paramMatchesIdentifiers);
-        allIdentifiers.addAll(matchValuesIdentifiers);
+        return matchValues;
+    }
 
-        return allIdentifiers;
+    private List<Integer> getIdentifiersFromNodes(List<InputValue> inputValues, List<ParameterMatch> parameterMatches, List<MatchValue> matchValues) {
+        List<Integer> returnList = new ArrayList<>();
+
+        returnList.addAll(inputValues.stream().map(InputValue::getIdentifier).toList());
+        returnList.addAll(parameterMatches.stream().map(ParameterMatch::getIdentifier).toList());
+        returnList.addAll(matchValues.stream().map(MatchValue::getIdentifier).toList());
+
+        return returnList;
+    }
+
+    private Session connectEntitiesToSessionNode(String sessionName, List<InputValue> inputValues, List<ParameterMatch> parameterMatches, List<MatchValue> matchValues) {
+        Session session = sessionTable.get(sessionName);
+        session.setInputValuesRelatedToSession(inputValues);
+        session.setParameterMatchesRelatedToSession(parameterMatches);
+        session.setMatchValuesRelatedToSession(matchValues);
+        sessionTable.put(sessionName, session);
+        return session;
+    }
+
+    private String identifyMessageHashes(int lowestHistoryId, int highestHistoryId) {
+        List<String> messageIds = new ArrayList<>();
+        var proxyList = api.proxy().history();
+        if (!(proxyList.size() < lowestHistoryId)) {
+            for (int i = lowestHistoryId -1; i < highestHistoryId; i++) {
+                if (i == proxyList.size()) {
+                    messageIds.add("\"" + Hashing.sha1(proxyList.get(i - 1).finalRequest().toByteArray().getBytes()) + "\"");
+                } else {
+                    messageIds.add("\"" + Hashing.sha1(proxyList.get(i).finalRequest().toByteArray().getBytes()) + "\"");
+                }
+            }
+            return Arrays.toString(messageIds.toArray());
+        }
+
+       return "";
     }
 
     public void updateSessionInformation(Session newSession, String sessionName, List<SessionParameter> newParameters) {
@@ -255,5 +315,36 @@ public class SessionViewModel {
 
     public void setSelectedSessionIndex(int index) {
         this.selectedSessionIndex = index;
+    }
+
+    public static void setSessionCounter(int sessionCounter) {
+        SessionViewModel.sessionCounter = sessionCounter;
+    }
+
+    public void clearAllData() {
+        parameterValuesAndNames.clear();
+        helpers.clear();
+        inputValuesFromSessionDefList.clear();
+        sessionCounter = 0;
+        activeSessionName = "not set";
+        sessionTable.clear();
+    }
+
+    public void deleteSessionsInDB() {
+        String query1 = "Match (n:Session) detach delete n";
+        String query2 = "Match (n:SessionParameter) detach delete n";
+        DBModel.executeCypher(query1, Map.of());
+        DBModel.executeCypher(query2, Map.of());
+    }
+
+    public static void deleteMatchesFromSession() {
+        var keys = sessionTable.keys().asIterator();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            Session session = sessionTable.get(key);
+            session.setParameterMatchesRelatedToSession(new ArrayList<>());
+            session.setMatchValuesRelatedToSession(new ArrayList<>());
+            SessionViewModel.sessionTable.put(key, session);
+        }
     }
 }

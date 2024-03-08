@@ -8,13 +8,14 @@ public class ParameterContainer {
     private String type;
     private int occurrences;
     private int matches;
+    private boolean excludedByNoiseReduction;
 
-    public ParameterContainer(String name, String type, int occurrences, int matches){
+    public ParameterContainer(String name, String type, int occurrences, int matches, boolean excludedByNoiseReduction){
         this.name = name;
         this.type = type;
         this.occurrences = occurrences;
         this.matches = matches;
-
+        this.excludedByNoiseReduction = excludedByNoiseReduction;
     }
 
     public String getLabelRepresentation(){
@@ -42,5 +43,13 @@ public class ParameterContainer {
 
     public int getMatches() {
         return matches;
+    }
+
+    public boolean isExcludedByNoiseReduction() {
+        return this.excludedByNoiseReduction;
+    }
+
+    public void setExcludedByNoiseReduction(boolean excludedByNoiseReduction) {
+        this.excludedByNoiseReduction = excludedByNoiseReduction;
     }
 }

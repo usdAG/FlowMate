@@ -29,5 +29,10 @@ public class PaddingTextPane extends JPanel {
         this.setBorder(new EmptyBorder(allSides, allSides, allSides, allSides));
     }
 
+    public void markAsExcluded() {
+        this.pane.setForeground(Color.darkGray);
+        this.pane.setToolTipText("Excluded by Noise Reduction");
+    }
+
 
 }

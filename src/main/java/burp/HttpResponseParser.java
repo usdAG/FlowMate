@@ -1,12 +1,11 @@
 package burp;
 
 import burp.api.montoya.MontoyaApi;
-import burp.api.montoya.http.handler.HttpResponseReceived;
 import burp.api.montoya.http.message.requests.HttpRequest;
 import db.MatchHelperClass;
 import db.entities.InputParameter;
 import utils.*;
-import java.net.MalformedURLException;
+
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
@@ -26,10 +25,10 @@ public class HttpResponseParser {
         this.defaultParser = new DefaultParser();
     }
 
-    public HttpResponse parseResponse(HttpResponseReceived responseReceived, HttpRequest request){
+    public HttpResponse parseResponse(burp.api.montoya.http.message.responses.HttpResponse responseReceived, HttpRequest request){
         var raw = responseReceived.toByteArray().getBytes();
 
-        var resp = this.parseResponseBase(responseReceived, raw, stringToURL(request.url()));
+        var resp = this.parseResponseBase(responseReceived, raw, URLExtension.stringToUrl(request.url()));
 
         // Parse from burp.api request to own request type
         HttpRequestParser requestParser = new HttpRequestParser(this.api);
@@ -38,7 +37,7 @@ public class HttpResponseParser {
         return resp;
     }
     // Takes response, request as bytes, request url
-    public HttpResponse parseResponseBase(HttpResponseReceived responseReceived, byte[] raw, URL requestUrl){
+    public HttpResponse parseResponseBase(burp.api.montoya.http.message.responses.HttpResponse responseReceived, byte[] raw, URL requestUrl){
         var headers = responseReceived.headers();
         int statusCode = responseReceived.statusCode();
 
@@ -48,8 +47,7 @@ public class HttpResponseParser {
 
         return new HttpResponse(statusCode, body, contentType, headers, requestUrl);
     }
-
-    private String extractBody(HttpResponseReceived responseReceived, byte[] raw){
+    private String extractBody(burp.api.montoya.http.message.responses.HttpResponse responseReceived, byte[] raw){
         var bodyOffset = responseReceived.bodyOffset();
         if(bodyOffset > 0 && bodyOffset < raw.length){
             var rawBody = Arrays.copyOfRange(raw, bodyOffset, raw.length);
@@ -79,21 +77,15 @@ public class HttpResponseParser {
         }
 
         usedParser.initialize(resp);
-        for(var param : inputParameters){
+        for(var param : inputParameters) {
+            if (param.isExcludedByNoiseReduction()) {
+                continue;
+            }
             var newMatches = usedParser.matchAllOccurrences(param, messageHash);
             if(newMatches.size() > 0)
                 matches.addAll(newMatches);
         }
 
         return matches;
-    }
-
-    private URL stringToURL(String urlString) {
-        try {
-            return new URL(urlString);
-        } catch (MalformedURLException e) {
-            Logger.getInstance().logToError("[HttpRequestParser] invalid URL String was given to create URL object");
-        }
-        return null;
     }
 }

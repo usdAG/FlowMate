@@ -1,5 +1,7 @@
 package utils;
 
+import java.util.List;
+
 public class StringUtils {
 
     public static boolean isNullOrEmpty(String input){
@@ -10,4 +12,12 @@ public class StringUtils {
         return a.toLowerCase().contains(b.toLowerCase());
     }
 
+    public static boolean containsListIgnoreCase(List<String> base, String pattern){
+        for(var baseString : base){
+            if (pattern.contains(baseString)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

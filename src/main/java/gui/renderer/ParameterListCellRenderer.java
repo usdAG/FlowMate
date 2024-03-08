@@ -1,7 +1,7 @@
 package gui.renderer;
 
-import gui.container.ParameterContainer;
 import gui.components.PaddingTextPane;
+import gui.container.ParameterContainer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,11 +18,14 @@ public class ParameterListCellRenderer implements ListCellRenderer<ParameterCont
         panel.add(content);
 
         if (b) {
-            content.setBackground(new Color(255,197,153));
-            content.setForeground(new Color(0,0,0));
+            content.setBorder(BorderFactory.createLineBorder(new Color(255, 197, 153), 5));
         } else {
-            content.setBackground(new Color(255,255,255));
-            content.setForeground(new Color(0,0,0));
+            content.setBorder(BorderFactory.createLineBorder(new Color(255, 255, 255), 5));
+        }
+
+        if(parameterContainer.isExcludedByNoiseReduction()) {
+            content.markAsExcluded();
+            panel.setToolTipText("Excluded by Noise Reduction");
         }
 
         return panel;

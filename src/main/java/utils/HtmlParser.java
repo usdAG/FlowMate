@@ -8,7 +8,10 @@ import db.entities.InputValue;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.parser.Parser;
-import java.util.*;
+
+import java.util.Base64;
+import java.util.List;
+import java.util.Vector;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -79,17 +82,26 @@ public class HtmlParser extends ParserBase implements IParser {
         var decoded = this.api.utilities().urlUtils().decode(encoded);
         decoded = Parser.unescapeEntities(decoded, true);
 
+        StringBuilder headers = new StringBuilder();
+        for (var header : this.response.Headers) {
+            headers.append(header.toString()).append("\n");
+        }
+        var decodedHeaders = Parser.unescapeEntities(headers.toString(), true);
+
         for(var occurrence : occurrences.stream().filter(e -> !StringUtils.isNullOrEmpty(e.getValue())).collect(Collectors.toList())) {
+            if (occurrence.isExcludedByNoiseReduction())
+                continue;
             var value = occurrence.getValue();
 
             var findings = findAllOccurrences(decoded, value);
+
+            matches.addAll(matchHeaderFindings(this.response, decodedHeaders, occurrence, inputParameter, messageHash));
+
             if (findings.size() != 0) {
                 for (int idx : findings) {
                     var proof = surroundingText(decoded, value, idx);
                     var matcher = inputParameter.getRegexMatchingValueByIdentifier(occurrence.getIdentifier()).matcher(proof);
                     if (matcher.find()) {
-                        var startIndex = matcher.start();
-//                        matches.add(new MatchHelperClass(this.response, inputParameter, occurrence, proof, startIndex));
                         matches.add(new MatchHelperClass(this.response, inputParameter.getName(), occurrence.getValue(), type,
                                 this.response.ContentType, proof,
                                 URLExtension.urlToString(this.response.AssociatedRequestUrl), messageHash, inputParameter, occurrence));

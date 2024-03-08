@@ -1,6 +1,7 @@
 package db.entities;
 
 import org.neo4j.ogm.annotation.Id;
+import org.neo4j.ogm.annotation.Transient;
 
 import java.util.Objects;
 
@@ -19,6 +20,8 @@ public class InputValue {
 
     private String type;
 
+    private boolean excludedByNoiseReduction;
+
     // Empty Constructor needed for neo4J
     public InputValue() {
 
@@ -30,6 +33,7 @@ public class InputValue {
         this.messageHash = messageHash;
         this.session = "not set";
         this.identifier = Objects.hash(value, url, type);
+        this.excludedByNoiseReduction = false;
     }
 
     public InputValue(String value, String url, String type, String messageHash, String session) {
@@ -39,6 +43,7 @@ public class InputValue {
         this.messageHash = messageHash;
         this.session = session;
         this.identifier = Objects.hash(value, url, type, session);
+        this.excludedByNoiseReduction = false;
     }
 
     public String getValue() {
@@ -67,6 +72,14 @@ public class InputValue {
 
     public void setSession(String session) {
         this.session = session;
+    }
+
+    public boolean isExcludedByNoiseReduction() {
+        return excludedByNoiseReduction;
+    }
+
+    public void setExcludedByNoiseReduction(boolean excludedByNoiseReduction) {
+        this.excludedByNoiseReduction = excludedByNoiseReduction;
     }
 
     @Override

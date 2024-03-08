@@ -1,21 +1,16 @@
 package utils;
 
-import java.util.Collection;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
-
-import org.json.JSONException;
-
-import com.github.wnameless.json.flattener.JsonFlattener;
-
 import burp.HttpResponse;
+import com.github.wnameless.json.flattener.JsonFlattener;
 import db.MatchHelperClass;
 import db.entities.InputParameter;
 import db.entities.InputValue;
+import org.json.JSONException;
+import org.jsoup.parser.Parser;
 
-public class JsonParser implements IParser {
+import java.util.*;
+
+public class JsonParser extends ParserBase implements IParser {
 
     private HttpResponse response;
     private Hashtable<String, Collection<String>> keyValue;
@@ -28,8 +23,14 @@ public class JsonParser implements IParser {
     public boolean initialize(HttpResponse response) {
         this.response = response;
 
+        String body = this.response.Body;
+        // Remove Character to avoid exception
+        // Unexpected character ('' (code 65279 / 0xfeff)): expected a valid value (number, String, array, object, 'true', 'false' or 'null')
+        if(body.startsWith("\uFEFF"))
+            body = body.substring(1);
+
         try{
-            Map<String, Object> flattendJSON = JsonFlattener.flattenAsMap(this.response.Body);
+            Map<String, Object> flattendJSON = JsonFlattener.flattenAsMap(body);
             this.fillKeyValue(flattendJSON);
         }
         catch(JSONException ex){
@@ -70,7 +71,18 @@ public class JsonParser implements IParser {
     private List<MatchHelperClass> performMatching(InputParameter inputParameter, List<InputValue> occurrences, String messageHash) {
         var matches = new Vector<MatchHelperClass>();
 
+        StringBuilder headers = new StringBuilder();
+        for (var header : this.response.Headers) {
+            headers.append(header.toString()).append("\n");
+        }
+        var decodedHeaders = Parser.unescapeEntities(headers.toString(), true);
+
         for(var occurrence : occurrences) {
+            if (occurrence.isExcludedByNoiseReduction())
+                continue;
+
+            matches.addAll(matchHeaderFindings(this.response, decodedHeaders, occurrence, inputParameter, messageHash));
+
             if (!keyValue.containsKey(occurrence.getValue())){
                 continue;
             }

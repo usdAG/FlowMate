@@ -1,11 +1,16 @@
 package db;
 
+import burp.RegexMatcher;
 import db.entities.InputParameter;
 import db.entities.InputValue;
+import db.entities.Session;
 import db.entities.Url;
 import gui.GettingStartedView;
+import gui.container.RuleContainer;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import model.SessionViewModel;
+import utils.Logger;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -53,8 +58,11 @@ public class ParameterHandler {
     }
 
     Map<Integer, InputParameter> combineListsIntoParameterEntityMap(List<Integer> keys, List<InputParameter> values) {
-        if (keys.size() != values.size())
-            throw new IllegalArgumentException ("Cannot combine lists with dissimilar sizes");
+        if (keys.size() != values.size()) {
+            IllegalArgumentException exception = new IllegalArgumentException("Cannot combine lists with dissimilar sizes");
+            Logger.getInstance().logToError(Arrays.toString(exception.getStackTrace()));
+            throw exception;
+        }
         Map<Integer, InputParameter> map = new Hashtable<>();
         for (int i=0; i<keys.size(); i++) {
             map.put(keys.get(i), values.get(i));
@@ -63,8 +71,11 @@ public class ParameterHandler {
     }
 
     Map<Integer, Url> combineListsIntoUrlEntityMap(List<Integer> keys, List<Url> values) {
-        if (keys.size() != values.size())
-            throw new IllegalArgumentException ("Cannot combine lists with dissimilar sizes");
+        if (keys.size() != values.size()) {
+            IllegalArgumentException exception = new IllegalArgumentException("Cannot combine lists with dissimilar sizes");
+            Logger.getInstance().logToError(Arrays.toString(exception.getStackTrace()));
+            throw exception;
+        }
         Map<Integer, Url> map = new Hashtable<>();
         for (int i=0; i<keys.size(); i++) {
             map.put(keys.get(i), values.get(i));
@@ -73,8 +84,11 @@ public class ParameterHandler {
     }
 
     Map<Integer, InputValue> combineListsIntoParameterOccurrenceMap(List<Integer> keys, List<InputValue> values) {
-        if (keys.size() != values.size())
-            throw new IllegalArgumentException ("Cannot combine lists with dissimilar sizes");
+        if (keys.size() != values.size()) {
+            IllegalArgumentException exception = new IllegalArgumentException("Cannot combine lists with dissimilar sizes");
+            Logger.getInstance().logToError(Arrays.toString(exception.getStackTrace()));
+            throw exception;
+        }
         Map<Integer, InputValue> map = new Hashtable<>();
         for (int i=0; i<keys.size(); i++) {
             map.put(keys.get(i), values.get(i));
@@ -98,7 +112,15 @@ public class ParameterHandler {
         InputValue newInputValue = new InputValue(parameterHelper.getValue(), url, type, messageHash);
         if (this.hasActiveSession) {
             newInputValue = new InputValue(parameterHelper.getValue(), url, type, messageHash, this.sessionName);
+            Session session = SessionViewModel.sessionTable.get(this.sessionName);
+            if (session != null) {
+                session.addInputValue(newInputValue);
+                DBModel.saveSession(session);
+                SessionViewModel.sessionTable.put(this.sessionName, session);
+            }
         }
+        RegexMatcher.excludeParameter(newInputParameterEntity);
+        RegexMatcher.excludeInputValue(newInputValue);
 
         // Check if the URL Entity already exists in the DB
         // If not, add it to the list of known Urls and save the Url + InputParameter in the DB
@@ -200,6 +222,36 @@ public class ParameterHandler {
 
     public void setSessionName(String sessionName) {
         this.sessionName = sessionName;
+    }
+
+    public void clearAllMatchRelatedObjectsFromStorage() {
+        for (Url url : urlStorage.values()) {
+            url.setFound(new ArrayList<>());
+        }
+    }
+
+    public void clearAllStorages() {
+        parameterStorage.clear();
+        parameterValueStorage.clear();
+        urlStorage.clear();
+        observableInputParameterList.clear();
+        observableInputParameterListSession.clear();
+    }
+
+    public void updateParameterExclusion(RuleContainer ruleContainer) {
+        RegexMatcher.excludeParametersForSingleRule(this.observableInputParameterList, ruleContainer);
+        if (hasActiveSession) {
+            // Update exclusion on InputValues linked to Sessions
+            var keys = SessionViewModel.sessionTable.keys().asIterator();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                Session session = SessionViewModel.sessionTable.get(key);
+                List<InputValue> inputValues = session.getInputValuesRelatedToSession();
+                RegexMatcher.excludeInputValuesForSingleRule(inputValues, ruleContainer);
+                session.setInputValuesRelatedToSession(inputValues);
+                SessionViewModel.sessionTable.put(key, session);
+            }
+        }
     }
 }
 

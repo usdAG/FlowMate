@@ -6,14 +6,14 @@ import burp.api.montoya.ui.editor.HttpRequestEditor;
 import burp.api.montoya.ui.editor.HttpResponseEditor;
 import db.MatchHandler;
 import db.ParameterHandler;
-import gui.container.ParameterMatchContainer;
+import gui.container.InputParameterContainer;
 import gui.container.MatchValueContainer;
 import gui.container.ParameterContainer;
-import gui.container.InputParameterContainer;
-import gui.renderer.MatchValueListCellRenderer;
-import gui.renderer.ParameterMatchListCellRenderer;
-import gui.renderer.ParameterListCellRenderer;
+import gui.container.ParameterMatchContainer;
 import gui.renderer.InputParameterListCellRenderer;
+import gui.renderer.MatchValueListCellRenderer;
+import gui.renderer.ParameterListCellRenderer;
+import gui.renderer.ParameterMatchListCellRenderer;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
@@ -33,13 +33,13 @@ public class QueryView extends JScrollPane {
     public JList<MatchValueContainer> matchValueJList;
     public JPanel leftPanel;
     public JPanel rightMidPanel;
-
     private JPanel sortPanel;
     public JTextArea cypherQueryField;
     public ParameterHandler parameterHandler;
     private MatchHandler matchHandler;
     public JButton sortByLabel;
     public JComboBox<String> filterPicker;
+    public JCheckBox hideExcludedParamsCheckBox;
     public JEditorPane selectedMessageId;
     public HttpRequestEditor httpRequestEditor;
     public HttpResponseEditor httpResponseEditor;
@@ -155,11 +155,15 @@ public class QueryView extends JScrollPane {
         this.sortByLabel.setBorderPainted(false);
         this.filterPicker.setSelectedItem("Name");
 
+        this.hideExcludedParamsCheckBox = new JCheckBox("Hide Parameter excluded by Noise Reduction");
+        this.hideExcludedParamsCheckBox.setSelected(false);
+
         this.sortPanel.add(new JLabel("Sort By "));
         this.sortPanel.add(this.filterPicker);
         this.sortPanel.add(this.sortByLabel, "wrap");
         this.sortPanel.add(new JLabel("Search "));
-        this.sortPanel.add(this.searchField);
+        this.sortPanel.add(this.searchField, "wrap");
+        this.sortPanel.add(this.hideExcludedParamsCheckBox, "span");
 
        return this.sortPanel;
     }

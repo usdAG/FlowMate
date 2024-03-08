@@ -4,7 +4,9 @@ import burp.HttpResponse;
 import db.MatchHelperClass;
 import db.entities.InputParameter;
 import db.entities.InputValue;
+import org.jsoup.parser.Parser;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 import java.util.stream.Collectors;
@@ -22,6 +24,7 @@ public class DefaultParser extends ParserBase implements IParser {
             return true;
         }
         catch(Exception ex){
+            Logger.getInstance().logToError(Arrays.toString(ex.getStackTrace()));
             return false;
         }
     }
@@ -34,8 +37,18 @@ public class DefaultParser extends ParserBase implements IParser {
         var matches = new Vector<MatchHelperClass>();
         var type = inputParameter.getType();
 
+        StringBuilder headers = new StringBuilder();
+        for (var header : this.currentResponse.Headers) {
+            headers.append(header.toString()).append("\n");
+        }
+        var decodedHeaders = Parser.unescapeEntities(headers.toString(), true);
+
         for(var occurrence : occurrences.stream().filter(e -> !StringUtils.isNullOrEmpty(e.getValue())).collect(Collectors.toList())) {
+            if (occurrence.isExcludedByNoiseReduction())
+                continue;
             var value = occurrence.getValue();
+
+            matches.addAll(matchHeaderFindings(this.currentResponse, decodedHeaders, occurrence, inputParameter, messageHash));
 
             var findings = findAllOccurrences(this.currentResponseContent, value);
             if (findings.size() != 0) {

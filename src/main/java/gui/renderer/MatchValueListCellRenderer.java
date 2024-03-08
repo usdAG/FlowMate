@@ -1,7 +1,7 @@
 package gui.renderer;
 
-import gui.container.MatchValueContainer;
 import gui.components.PaddingTextPane;
+import gui.container.MatchValueContainer;
 
 import javax.swing.*;
 import java.awt.*;

@@ -13,6 +13,10 @@ public class FileSystemUtil {
 
     public static File PROPERTIES_PATH;
 
+    public static File LOG_PATH;
+
+    public static String DEFAULT_RULES_PATH =  "/default_rules.json";
+
     static {
         String tmpdir = System.getProperty("java.io.tmpdir");
         if (tmpdir == null) {
@@ -50,14 +54,27 @@ public class FileSystemUtil {
         }
 
         File propertiesPath = new File(dbDir, "properties");
+        File logPath = new File(dbDir, "flowmate.log");
         File dbPath = new File(dbDir, "neo");
 
         PROPERTIES_PATH = propertiesPath.getAbsoluteFile();
+        LOG_PATH = logPath.getAbsoluteFile();
         return Path.of(dbPath.getAbsolutePath());
     }
 
-    private static boolean initDirectory(File cooperatorDir) {
-        return (cooperatorDir.exists() || cooperatorDir.mkdirs()) && cooperatorDir.canRead() &&
-                cooperatorDir.canWrite();
+    private static boolean initDirectory(File dbDir) {
+        return (dbDir.exists() || dbDir.mkdirs()) && dbDir.canRead() &&
+                dbDir.canWrite();
+    }
+
+    public static void checkLogFile() {
+        File logFile = LOG_PATH;
+        if (!logFile.exists()) {
+            try {
+                logFile.createNewFile();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

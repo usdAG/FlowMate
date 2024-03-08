@@ -1,7 +1,8 @@
 package gui.renderer;
 
-import gui.container.InputParameterContainer;
 import gui.components.PaddingTextPane;
+import gui.container.InputParameterContainer;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -22,6 +23,11 @@ public class InputParameterListCellRenderer implements ListCellRenderer<InputPar
         } else {
             content.setBackground(new Color(255,255,255));
             content.setForeground(new Color(0,0,0));
+        }
+
+        if(occurrenceContainer.isExcludedByNoiseReduction()) {
+            content.markAsExcluded();
+            panel.setToolTipText("Excluded by Noise Reduction");
         }
 
         return panel;

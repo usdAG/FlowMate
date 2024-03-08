@@ -1,5 +1,6 @@
 package utils;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 
 public class URLExtension {
@@ -41,6 +42,15 @@ public class URLExtension {
         else{
             return String.format("%s://%s", proto, host);
         }
+    }
+
+    public static URL stringToUrl(String url) {
+        try {
+            return new URL(url);
+        } catch (MalformedURLException e) {
+            Logger.getInstance().logToError("Invalid URL String was given to create URL object");
+        }
+        return null;
     }
 
 }

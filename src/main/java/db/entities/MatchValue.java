@@ -1,6 +1,7 @@
 package db.entities;
 
-import org.neo4j.ogm.annotation.*;
+import org.neo4j.ogm.annotation.Id;
+import org.neo4j.ogm.annotation.NodeEntity;
 
 import java.util.Objects;
 
@@ -36,7 +37,7 @@ public class MatchValue {
         this.url = url;
         this.session = "not set";
         this.messageHash = messageHash;
-        this.identifier = Objects.hash(name, value, matchProof, this.session);
+        this.identifier = Objects.hash(name, value, matchProof, url, this.session);
     }
 
     public MatchValue(String name, String value, String responseContentType, String matchProof, String url, String messageHash, String session) {
@@ -47,7 +48,11 @@ public class MatchValue {
         this.url = url;
         this.session = session;
         this.messageHash = messageHash;
-        this.identifier = Objects.hash(name, value, matchProof, session);
+        this.identifier = Objects.hash(name, value, matchProof, url, session);
+    }
+
+    public String getName() {
+        return name;
     }
 
     public String getUrl() {

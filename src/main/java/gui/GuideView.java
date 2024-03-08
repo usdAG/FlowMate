@@ -1,19 +1,13 @@
 package gui;
 
-import burp.api.montoya.MontoyaApi;
+import net.miginfocom.swing.MigLayout;
+import org.commonmark.node.Node;
+import org.commonmark.parser.Parser;
+import org.commonmark.renderer.html.HtmlRenderer;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
 import java.util.Objects;
-
-import net.miginfocom.swing.MigLayout;
-import org.commonmark.node.*;
-import org.commonmark.parser.Parser;
-import org.commonmark.renderer.html.HtmlRenderer;
 
 public class GuideView extends JTabbedPane {
 
