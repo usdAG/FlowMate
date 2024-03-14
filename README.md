@@ -25,25 +25,25 @@ A video demonstrating the end-to-end use of FlowMate is available on our YouTube
 **FlowMate** is used best during the reconnaissance phase in a security assessment. The following steps explain on how to get started:
 1. Load FlowMate into your BurpSuite with a project for your current assessment already created
 2. After loading finished add the target application to the BurpSuite internal *Scope*. Only in-scope targets are tracked by FlowMate
-3. Activate the detection by checking both boxes on the *Getting Started* tab of FlowMate
+3. Activate the detection by checking both boxes on the *Getting Started* tab of FlowMate. You can choose *Live* or *Deferred* matching. *Deferred* is recommended for bigger applications as *Live* matching might slow down the browsing experience if hundreds of parameters are matched against every response.
 4. Browse the application following the *General best practices* below
 5. Stop the detection before starting manual analysis. This prevents payloads and duplicate values from polluting the graph
 6. Profit from the data flow graph created for you!
-
-### What can you get from the graph?
-1. You can look up the locations where a specific parameter you are testing reappears in the application, including the immediate surroundings of the match, giving a first impression of which payloads might be useful for exploitation
-2. You can more easily identify occurrences of a parameter in places that are not directly visible, such as in hidden input fields or when a value is used in resources like stylesheets or scripts for example
-3. In conjunction with the session tracking feature you can track cross-session parameter occurrences. In case of attack vectors like Cross-Site Scripting (XSS) this may lead to attacks on higher privileged accounts (privilege escalation, account takeover)
-4. If your target application consists of multiple domains, for example APIs and the actual web frontend, the graph helps to detect cross-domain occurrences of parameter matches
-5. You can directly identify unsafe behavior of the application from the graph. Some examples include:
-   - A user password is included in the applications sources in cleartext
-   - Security enhancements such as CSRF tokens are not changed in a secure manner
 
 ### General best practices
 - Enter *unique* and *long enough* values (generally more than 6 characters) when browsing an application with FlowMate enabled
 - Do not enter payloads during this phase
 - Browse all user roles and functionality available
 
+### What can you get from the graph?
+1. You can lookup in which locations an specific parameter you are testing reappers in the application including the near surrounding of the match giving a first impression on which payloads might be useful for exploitation
+2. You can more easily identify occurrences of a parameter in not directly visible places, such as in hidden input fields or when a value is used in resources like stylesheets or scripts for example
+3. In conjunction with the session tracking feature you can track cross-session parameter occurrences. In case of attack vectors like Cross-Site Scripting (XSS) this may lead to attacks on higher privileged accounts (privilege escalation, account takeover)
+4. If your target application consists of multiple domains, for example APIs and the actual web frontend, the graph helps to detect cross-domain occurrences of parameter matches
+5. You can directly identify unsafe behavior of the application from the graph. Some examples include:
+   - A user password is included in the applications sources in cleartext
+   - Security enhancements such as CSRF tokens are not changed in a secure manner
+   
 ## Installation
 
 ### If you want to use a pre-built JAR file, follow these steps
@@ -54,4 +54,7 @@ A video demonstrating the end-to-end use of FlowMate is available on our YouTube
 1. Clone the repository, switch into it and run `mvn package`. The `target` folder then contains a built version of FlowMate
 2. Follow the steps to install an extension from JAR file here: [Installing an extension from a file](https://portswigger.net/burp/documentation/desktop/extensions/installing-extensions#installing-an-extension-from-a-file)
 
+## Reporting Issues
+If you encounter issues with FlowMate please report to us via a GitHub Issue. Error Logs are written to the logfile in `~/.flowmate` folder on your system running the plugin as well as the error log console in the BurpSuite Extension tab ("Extension" Tab > "Installed" Tab > Select "FlowMate" > "Errors" Tab).
 
+Supplying us with this information as well as a short description of when the error occurs helps us to troubleshoot and fix the issue. Furthermore, keeping the BurpState might help if we have questions back to you.
