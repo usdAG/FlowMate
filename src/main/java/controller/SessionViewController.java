@@ -88,6 +88,11 @@ public class SessionViewController implements ActionListener, ListSelectionListe
             model.removeElement(sessionDefJList.getSelectedValue());
         } else if (actionEvent.getSource().equals(view.saveSessionDefinitionButton)) {
             // Check if Sessions have been defined previously, if yes delete everything related to them
+            DefaultListModel<SessionDefContainer> listModel = (DefaultListModel<SessionDefContainer>) sessionDefJList.getModel();
+            if (listModel.isEmpty()) {
+                clearDataAndView();
+                return;
+            }
             if (sessionCounter != 0) {
                 sessionCounter = 0;
                 ((DefaultListModel<SessionContainer>) sessionJList.getModel()).clear();

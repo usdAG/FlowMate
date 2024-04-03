@@ -328,6 +328,8 @@ public class SessionViewModel {
         sessionCounter = 0;
         activeSessionName = "not set";
         sessionTable.clear();
+        matchHandler.setHasActiveSession(false);
+        HttpListener.setHasActiveSession(false);
     }
 
     public void deleteSessionsInDB() {
