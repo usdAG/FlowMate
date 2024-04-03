@@ -136,15 +136,23 @@ public class DeferMatching implements PropertyChangeListener {
                 setProgress(0);
                 int listSize = proxyList.size();
 
-                List<Session> sessions = SessionViewModel.sessionTable.values().stream().toList();
-
-                String currentSessionName = matchHandler.getSessionName();
-
-                HashMap<Integer, String> hashMap = correctSessionName(sessions, listSize);
+                HashMap<Integer, String> hashMap = new HashMap<>();
+                String currentSessionName = "not set";
+                if (matchHandler.isSessionActive()) {
+                    List<Session> sessions = SessionViewModel.sessionTable.values().stream().toList();
+                    currentSessionName = matchHandler.getSessionName();
+                    hashMap = correctSessionName(sessions, listSize);
+                }
 
                 for (int i = 0; i < listSize; i++) {
-                    if (!matchHandler.getSessionName().equals(hashMap.get(i))) {
-                        matchHandler.setSessionName(hashMap.get(i));
+
+                    if (matchHandler.isSessionActive()) {
+                        if (!matchHandler.getSessionName().equals(hashMap.get(i)) && hashMap.size() == listSize) {
+                            matchHandler.setSessionName(hashMap.get(i));
+                        } else {
+                            // correctSessionName method returns hashmap of size = 1 if there is only 1 session defined
+                            matchHandler.setSessionName(hashMap.get(0));
+                        }
                     }
 
                     ProxyHttpRequestResponse proxyResponse = proxyList.get(i);
@@ -196,7 +204,8 @@ public class DeferMatching implements PropertyChangeListener {
                 }
                 taskOutput.append("Saving Entities in Database...\n");
                 DBModel.saveBulk(allMatches);
-                matchHandler.setSessionName(currentSessionName);
+                if (matchHandler.isSessionActive())
+                    matchHandler.setSessionName(currentSessionName);
                 return null;
             } catch (Exception e) {
                 Logger.getInstance().logToError(Arrays.toString(e.getStackTrace()));
