@@ -222,6 +222,10 @@ public class MatchHandler {
         return sessionName;
     }
 
+    public boolean isSessionActive() {
+        return this.hasActiveSession;
+    }
+
     public void clearAllStorages() {
         matchValueStorage.clear();
         parameterMatchStorage.clear();

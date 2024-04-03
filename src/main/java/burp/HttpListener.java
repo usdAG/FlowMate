@@ -135,4 +135,8 @@ public class HttpListener implements HttpHandler {
     public static void setLiveMatchingIsActive(boolean isActive) {
         liveMatchingIsActive = isActive;
     }
+
+    public static void setHasActiveSession(boolean hasActiveSession) {
+        HttpListener.hasActiveSession = hasActiveSession;
+    }
 }
