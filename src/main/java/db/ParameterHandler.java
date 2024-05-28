@@ -115,7 +115,6 @@ public class ParameterHandler {
             Session session = SessionViewModel.sessionTable.get(this.sessionName);
             if (session != null) {
                 session.addInputValue(newInputValue);
-                DBModel.saveSession(session);
                 SessionViewModel.sessionTable.put(this.sessionName, session);
             }
         }

@@ -139,7 +139,7 @@ public class MatchHandler {
                 if (session != null) {
                     session.addMatch(newParameterMatchEntity);
                     session.addMatchValue(newMatchValueEntity);
-                    returnList.add(session);
+                    returnList.add(newParameterMatchEntity);
                     returnList.add(matchingUrlEntity);
                     SessionViewModel.sessionTable.put(this.sessionName, session);
                 } else {
@@ -154,7 +154,7 @@ public class MatchHandler {
                 if (session != null) {
                     session.addMatch(relatedParameterMatchEntity);
                     session.addMatchValue(newMatchValueEntity);
-                    returnList.add(session);
+                    returnList.add(relatedParameterMatchEntity);
                     SessionViewModel.sessionTable.put(this.sessionName, session);
                 } else {
                     returnList.add(relatedParameterMatchEntity);
