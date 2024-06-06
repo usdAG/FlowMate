@@ -130,7 +130,6 @@ public class GettingStartedView extends JScrollPane {
         if (this.propertiesHandler.isScopeSet()) {
             scopeSet.setSelected(true);
             detectionActiveCheckbox.setEnabled(true);
-            detectionActiveCheckbox.setSelected(true);
         } else {
             scopeSet.setSelected(false);
             detectionActiveCheckbox.setSelected(false);
