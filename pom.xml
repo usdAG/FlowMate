@@ -80,7 +80,7 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-native</artifactId>
-            <version>5.19.0</version>
+            <version>5.21.2</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.jsoup/jsoup -->
         <dependency>
