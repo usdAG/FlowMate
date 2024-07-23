@@ -1,6 +1,7 @@
 package utils;
 
 import burp.api.montoya.logging.Logging;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;

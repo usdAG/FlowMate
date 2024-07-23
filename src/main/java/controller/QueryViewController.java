@@ -1,7 +1,6 @@
 package controller;
 
 import burp.ContainerConverter;
-import burp.RegexMatcher;
 import burp.api.montoya.MontoyaApi;
 import db.DBModel;
 import db.MatchHandler;
@@ -9,11 +8,12 @@ import db.ParameterHandler;
 import db.entities.InputParameter;
 import db.entities.MatchValue;
 import db.entities.ParameterMatch;
+import events.ListChangeEvent;
+import events.ListChangeListener;
 import events.RuleContainerEvent;
 import events.RuleContainerListener;
 import gui.QueryView;
 import gui.container.*;
-import javafx.collections.ListChangeListener;
 import model.QueryViewModel;
 import utils.MessageHashToProxyId;
 
@@ -22,10 +22,8 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Vector;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -76,6 +74,7 @@ public class QueryViewController implements ActionListener, ListSelectionListene
             }
         });
 
+        // MouseListener on parameterJList for contextmenu to send selected parameter to session definition
         view.parameterJList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -93,7 +92,7 @@ public class QueryViewController implements ActionListener, ListSelectionListene
         // to be updated
         this.parameterHandler.observableInputParameterList.addListener(new ListChangeListener<InputParameter>() {
             @Override
-            public void onChanged(Change<? extends InputParameter> change) {
+            public void onChanged(ListChangeEvent<? extends InputParameter> change) {
                 while (change.next()) {
                     if (change.wasAdded()) {
                         updateParameters();
@@ -104,7 +103,7 @@ public class QueryViewController implements ActionListener, ListSelectionListene
 
         this.matchHandler.observableParameterMatchList.addListener(new ListChangeListener<ParameterMatch>() {
             @Override
-            public void onChanged(Change<? extends ParameterMatch> change) {
+            public void onChanged(ListChangeEvent<? extends ParameterMatch> change) {
                 while (change.next()) {
                     if (change.wasAdded()) {
                         updateParameters();
@@ -117,25 +116,14 @@ public class QueryViewController implements ActionListener, ListSelectionListene
     // ActionListener for sort-label, search-field and right-click menu
     @Override
     public void actionPerformed(ActionEvent actionEvent) {
-        if (actionEvent.getSource().equals(view.sortByLabel)) { // Change text on click for Ascending/Descending order
-            if (view.sortByLabel.getText().equals("Desc ↓")) {
-                view.sortByLabel.setText("Asc ↑");
-                filterParameterList();
-            } else {
-                view.sortByLabel.setText("Desc ↓");
-                filterParameterList();
-            }
+        if (actionEvent.getSource().equals(view.sortByLabel)) { // change text on click for Ascending/Descending order
+            sortParameterListAscDescLabelAction();
         } else if (actionEvent.getSource().equals(view.filterPicker)) {
-            JComboBox<String> cb = (JComboBox)actionEvent.getSource();
-            model.setSelectedText((String) cb.getSelectedItem());
-            filterParameterList();
+            sortParameterListFilterPickerAction(actionEvent);
         } else if (actionEvent.getSource().equals(view.sendToSessionDef)) {
-            var param = (ParameterContainer) view.parameterJList.getSelectedValue();
-            String paramName = param.getName();
-            sessionViewController.addToSessionDefList(new SessionDefContainer(paramName, param.getType()));
+            sendToSessionDefinitionAction();
         } else if (actionEvent.getSource().equals(view.hideExcludedParamsCheckBox)) {
-            this.hideParamsExcludedByNoiseReduction = view.hideExcludedParamsCheckBox.isSelected();
-            view.parameterJList.setListData(new Vector<>(filterExcludedParams(containerConverter.parameterToContainer(this.parameterHandler.observableInputParameterList))));
+           hideExcludedParametersAction();
         }
     }
 
@@ -144,41 +132,80 @@ public class QueryViewController implements ActionListener, ListSelectionListene
     public void valueChanged(ListSelectionEvent listSelectionEvent) {
         if (!listSelectionEvent.getValueIsAdjusting()) {
             if (listSelectionEvent.getSource().equals(view.parameterMatchJList)) {
-                var matchEntity = (ParameterMatchContainer) view.parameterMatchJList.getSelectedValue();
-                if (matchEntity != null) {
-                    var url = matchEntity.getUrl();
-                    var value = matchEntity.getValue();
-                    var messageId = matchEntity.getMessageId();
-                    var messageHash = matchEntity.getMessageHash();
-                    updateSelectedMessageId(String.valueOf(messageId));
-                    int historyId = getHistoryId(messageHash);
-                    view.httpRequestEditor.setRequest(this.api.proxy().history().get(historyId).finalRequest());
-                    view.httpResponseEditor.setResponse(this.api.proxy().history().get(historyId).originalResponse());
-                    renderMatchEntries(model.matchValueEntityList.stream().filter(e -> e.getUrl().equals(url)).filter(e -> e.getValue().equals(value)).distinct().toList());
-                }
+                showDataForSelectedParameterMatch();
             } else if (listSelectionEvent.getSource().equals(view.parameterValueJList)) {
-                var param = (InputParameterContainer) view.parameterValueJList.getSelectedValue();
-                if (param != null) {
-                    var messageId = param.getMessageId();
-                    var messageHash = param.getMessageHash();
-                    int historyId = getHistoryId(messageHash);
-                    updateSelectedMessageId(String.valueOf(messageId));
-                    view.httpResponseEditor.setResponse(this.api.proxy().history().get(historyId).originalResponse());
-                    view.httpRequestEditor.setRequest(this.api.proxy().history().get(historyId).finalRequest());
-                }
-                view.parameterMatchJList.clearSelection();
-                clearMatchValueContainer();
+                showDataForSelectedParameterValue();
             } else if (listSelectionEvent.getSource().equals(view.parameterJList)) {
-                updateSelectedMessageId("");
-                view.parameterValueJList.clearSelection();
-                clearParameterMatchContainer();
-                view.httpRequestEditor.setRequest(null);
-                view.httpResponseEditor.setResponse(null);
-                var param = (ParameterContainer) view.parameterJList.getSelectedValue();
-                if (param != null) {
-                    parameterSelectedEvent();
-                }
+                showDataForSelectedParameter();
             }
+        }
+    }
+
+    private void sortParameterListAscDescLabelAction() {
+        if (view.sortByLabel.getText().equals("Desc ↓")) {
+            view.sortByLabel.setText("Asc ↑");
+            filterParameterList();
+        } else {
+            view.sortByLabel.setText("Desc ↓");
+            filterParameterList();
+        }
+    }
+
+    private void sortParameterListFilterPickerAction(ActionEvent actionEvent) {
+        JComboBox<String> cb = (JComboBox)actionEvent.getSource();
+        model.setSelectedText((String) cb.getSelectedItem());
+        filterParameterList();
+    }
+
+    private void sendToSessionDefinitionAction() {
+        var param = (ParameterContainer) view.parameterJList.getSelectedValue();
+        String paramName = param.getName();
+        sessionViewController.addToSessionDefList(new SessionDefContainer(paramName, param.getType()));
+    }
+
+    private void hideExcludedParametersAction() {
+        this.hideParamsExcludedByNoiseReduction = view.hideExcludedParamsCheckBox.isSelected();
+        view.parameterJList.setListData(new Vector<>(filterExcludedParams(containerConverter.parameterToContainer(this.parameterHandler.observableInputParameterList))));
+    }
+
+    private void showDataForSelectedParameter() {
+        updateSelectedMessageId("");
+        view.parameterValueJList.clearSelection();
+        clearParameterMatchContainer();
+        view.httpRequestEditor.setRequest(null);
+        view.httpResponseEditor.setResponse(null);
+        var param = (ParameterContainer) view.parameterJList.getSelectedValue();
+        if (param != null) {
+            parameterSelectedEvent();
+        }
+    }
+
+    private void showDataForSelectedParameterValue() {
+        var param = (InputParameterContainer) view.parameterValueJList.getSelectedValue();
+        if (param != null) {
+            var messageId = param.getMessageId();
+            var messageHash = param.getMessageHash();
+            int historyId = getHistoryId(messageHash);
+            updateSelectedMessageId(String.valueOf(messageId));
+            view.httpResponseEditor.setResponse(this.api.proxy().history().get(historyId).originalResponse());
+            view.httpRequestEditor.setRequest(this.api.proxy().history().get(historyId).finalRequest());
+        }
+        view.parameterMatchJList.clearSelection();
+        clearMatchValueContainer();
+    }
+
+    private void showDataForSelectedParameterMatch() {
+        var matchContainer = (ParameterMatchContainer) view.parameterMatchJList.getSelectedValue();
+        if (matchContainer != null) {
+            var url = matchContainer.getUrl();
+            var value = matchContainer.getValue();
+            var messageId = matchContainer.getMessageId();
+            var messageHash = matchContainer.getMessageHash();
+            updateSelectedMessageId(String.valueOf(messageId));
+            int historyId = getHistoryId(messageHash);
+            view.httpRequestEditor.setRequest(this.api.proxy().history().get(historyId).finalRequest());
+            view.httpResponseEditor.setResponse(this.api.proxy().history().get(historyId).originalResponse());
+            renderMatchEntries(model.matchValueEntityList.stream().filter(e -> e.getUrl().equals(url)).filter(e -> e.getValue().equals(value)).distinct().toList());
         }
     }
 
@@ -190,7 +217,7 @@ public class QueryViewController implements ActionListener, ListSelectionListene
 
     private void updateParameters() {
         Comparator<ParameterContainer> comparator = getSortSettings();
-        List<InputParameter> parameters = this.parameterHandler.observableInputParameterList;
+        List<InputParameter> parameters = this.parameterHandler.observableInputParameterList.stream().toList();
         Vector<ParameterContainer> parameterContainerVector;
         parameterContainerVector = new Vector<>(
                 containerConverter.parameterToContainer(parameters.stream().toList())
@@ -273,6 +300,7 @@ public class QueryViewController implements ActionListener, ListSelectionListene
         model.loadListData(paramName, paramType);
 
         view.parameterValueJList.setListData(containerConverter.parameterOccurrenceToContainer(model.occurrenceEntityList));
+
         if (!model.parameterMatchEntityList.isEmpty()) {
             view.parameterMatchJList.setListData(containerConverter.matchOccurrenceToContainer(model.parameterMatchEntityList));
             view.parameterMatchJList.addListSelectionListener(this);
@@ -321,6 +349,21 @@ public class QueryViewController implements ActionListener, ListSelectionListene
         return messageHashToProxyId.calculateId(hash) - 1;
     }
 
+    public void clearParameterList() {
+        this.view.parameterJList.setListData(new Vector<>());
+    }
+
+    public void clearDataAndView() {
+        clearParameterList();
+        clearMatchValueContainer();
+        clearParameterMatchContainer();
+        clearParamValueContainer();
+        updateSelectedMessageId("");
+        model.clearAllData();
+        view.cypherQueryField.setText("");
+        view.searchField.setText("");
+    }
+
     @Override
     public void onRuleChangeEvent(RuleContainerEvent event) {
         RuleContainer ruleContainer = event.getRuleContainer();
@@ -328,7 +371,8 @@ public class QueryViewController implements ActionListener, ListSelectionListene
             ruleContainer.setActive(false);
         }
         this.parameterHandler.updateParameterExclusion(ruleContainer);
-        DBModel.saveBulkParameters(this.parameterHandler.observableInputParameterList);
+        List<Object> bulkSaveList = new ArrayList<>(this.parameterHandler.observableInputParameterList);
+        DBModel.saveBulk(bulkSaveList);
         updateParameters();
     }
 
@@ -373,19 +417,5 @@ public class QueryViewController implements ActionListener, ListSelectionListene
             view.parameterJList.repaint();
         }
 
-    }
-    public void clearParameterList() {
-        this.view.parameterJList.setListData(new Vector<>());
-    }
-
-    public void clearDataAndView() {
-        clearParameterList();
-        clearMatchValueContainer();
-        clearParameterMatchContainer();
-        clearParamValueContainer();
-        updateSelectedMessageId("");
-        model.clearAllData();
-        view.cypherQueryField.setText("");
-        view.searchField.setText("");
     }
 }

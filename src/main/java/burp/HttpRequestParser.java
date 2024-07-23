@@ -42,13 +42,13 @@ public class HttpRequestParser {
 
 
     private Collection<ParameterHelperClass> sortParameters(List<ParsedHttpParameter> params, URL url){
-        var parameters2 = new Vector<ParameterHelperClass>();
+        var parameters = new Vector<ParameterHelperClass>();
         for (var p: params) {
             var burpType = p.type();
             ParameterType inferredType;
 
             //Map burp param types to my own types
-            switch(burpType){
+            switch (burpType) {
                 case BODY:
                     inferredType = ParameterType.BODY;
                     break;
@@ -67,13 +67,12 @@ public class HttpRequestParser {
 
             var value = p.value();
 
-            //TODO Good idea to always url decode
-            if(!StringUtils.isNullOrEmpty(value) &&( inferredType == ParameterType.URL || inferredType == ParameterType.BODY))
+            if (!StringUtils.isNullOrEmpty(value) &&( inferredType == ParameterType.URL || inferredType == ParameterType.BODY))
                 value = this.api.utilities().urlUtils().decode(value);
 
-            parameters2.add(new ParameterHelperClass(p.name(), inferredType, url.getHost(), URLExtension.urlToString(url), value));
+            parameters.add(new ParameterHelperClass(p.name(), inferredType, url.getHost(), URLExtension.urlToString(url), value));
         }
-        return parameters2;
+        return parameters;
     }
 
     private URL stringToURL(String urlString) {

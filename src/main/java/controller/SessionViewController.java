@@ -10,7 +10,10 @@ import db.CypherQueryHandler;
 import db.DBModel;
 import db.MatchHandler;
 import db.ParameterHandler;
-import db.entities.*;
+import db.entities.InputValue;
+import db.entities.ParameterMatch;
+import db.entities.Session;
+import db.entities.SessionParameter;
 import events.DeferMatchingFinishedListener;
 import gui.SessionView;
 import gui.container.*;
@@ -57,7 +60,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
         view.saveSessionDefinitionButton.addActionListener(this);
         view.changeSessionNameButton.addActionListener(this);
         sessionJList.addListSelectionListener(this);
-        sessionSpecificParameterJList.addListSelectionListener(this);
+        sessionSpecificParameterMatchesJList.addListSelectionListener(this);
         matchJList.addListSelectionListener(this);
     }
 
@@ -84,8 +87,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
     @Override
     public void actionPerformed(ActionEvent actionEvent) {
         if (actionEvent.getSource().equals(view.removeFromSessionDefButton)) {
-            DefaultListModel<SessionDefContainer> model = (DefaultListModel<SessionDefContainer>) sessionDefJList.getModel();
-            model.removeElement(sessionDefJList.getSelectedValue());
+            removeFromSessionDefinitionAction();
         } else if (actionEvent.getSource().equals(view.saveSessionDefinitionButton)) {
             // Check if Sessions have been defined previously, if yes delete everything related to them
             DefaultListModel<SessionDefContainer> listModel = (DefaultListModel<SessionDefContainer>) sessionDefJList.getModel();
@@ -94,30 +96,11 @@ public class SessionViewController implements ActionListener, ListSelectionListe
                 return;
             }
             if (sessionCounter != 0) {
-                sessionCounter = 0;
-                ((DefaultListModel<SessionContainer>) sessionJList.getModel()).clear();
-                model.inputValuesFromSessionDefList.clear();
-                model.parameterValuesAndNames.clear();
-                model.helpers.clear();
-                model.deleteSessionsInDB();
-                sessionTable.clear();
+                clearDataForNewSessionDefinition();
             }
-            sessionCounter++;
-            getRelevantInformationForSessionDefinition();
-            List<IdentifiedSession> sessions = model.identifyExistingSessions();
-            createSessionParametersFromIdentified(sessions);
+            createSessionFromDefinition();
         } else if (actionEvent.getSource().equals(view.changeSessionNameButton)) {
-            String newName = view.sessionNameTextField.getText();
-            // If the selected session that's name get changed is the last session of the list, change activeSessionName
-            // in Model, ParameterHandler and MatchHandler
-            if (model.getSelectedSession().getName().equals(model.getActiveSessionName())) {
-                model.setActiveSessionName(newName);
-                parameterHandler.setSessionName(newName);
-                matchHandler.setSessionName(newName);
-                model.helpers.clear();
-            }
-            crossSessionAudit.sessionRename(model.getSelectedSession().getName(), newName);
-            changeSessionName(newName);
+            changeSessionNameAction();
         }
     }
 
@@ -125,39 +108,78 @@ public class SessionViewController implements ActionListener, ListSelectionListe
     public void valueChanged(ListSelectionEvent listSelectionEvent) {
         if (!listSelectionEvent.getValueIsAdjusting()) {
             if (listSelectionEvent.getSource().equals(sessionJList)) {
-                var sessionContainer = (SessionContainer) sessionJList.getSelectedValue();
-                if (sessionContainer != null) {
-                    var sessionName = sessionContainer.getName();
-                    view.sessionNameTextField.setText(sessionName);
-                    Session selected = SessionViewModel.sessionTable.get(sessionName);
-                    model.setSelectedSession(sessionContainer);
-                    model.setSelectedSessionIndex(sessionJList.getSelectedIndex());
-                    addToParamMonitorContainer(selected);
-                    setSessionSpecificParameters(sessionName);
-                    view.clearMatchLists();
-                }
-            } else if (listSelectionEvent.getSource().equals(SessionView.sessionSpecificParameterJList)) {
-                var paramContainer = (SessionParameterContainer) SessionView.sessionSpecificParameterJList.getSelectedValue();
-                if (paramContainer != null) {
-                    var paramName = paramContainer.getName();
-                    var type = paramContainer.getType();
-                    var value = paramContainer.getValue();
-                    var session = model.getSelectedSession().getName();
-                    view.clearMatchLists();
-                    renderMatchEntries(type, value, session);
-                    setCypherQueryTest(paramName);
-                }
+                showDataForSelectedSession();
+            } else if (listSelectionEvent.getSource().equals(SessionView.sessionSpecificParameterMatchesJList)) {
+                showDataForSelectedMatchDuringSession();
             } else if (listSelectionEvent.getSource().equals(matchJList)) {
-                var parameterMatchContainer = (ParameterMatchContainer) matchJList.getSelectedValue();
-                if (parameterMatchContainer != null) {
-                    var value = parameterMatchContainer.getValue();
-                    var url = parameterMatchContainer.getUrl();
-                    var session = model.getSelectedSession().getName();
-                    renderMatchInfo(value, url, session);
-                }
+                showParameterMatchDetails();
             }
         }
     }
+
+    private void removeFromSessionDefinitionAction() {
+        DefaultListModel<SessionDefContainer> model = (DefaultListModel<SessionDefContainer>) sessionDefJList.getModel();
+        model.removeElement(sessionDefJList.getSelectedValue());
+    }
+
+    private void createSessionFromDefinition() {
+        sessionCounter++;
+        getRelevantInformationForSessionDefinition();
+        List<IdentifiedSession> sessions = model.identifyExistingSessions();
+        createSessionParametersFromIdentified(sessions);
+    }
+
+    private void changeSessionNameAction() {
+        String newName = view.sessionNameTextField.getText();
+        // If the selected session that's name get changed is the last session of the list, change activeSessionName
+        // in Model, ParameterHandler and MatchHandler
+        if (model.getSelectedSession().getName().equals(model.getActiveSessionName())) {
+            model.setActiveSessionName(newName);
+            parameterHandler.setSessionName(newName);
+            matchHandler.setSessionName(newName);
+            model.helpers.clear();
+        }
+        crossSessionAudit.sessionRename(model.getSelectedSession().getName(), newName);
+        changeSessionName(newName);
+    }
+
+    private void showDataForSelectedSession() {
+        var sessionContainer = (SessionContainer) sessionJList.getSelectedValue();
+        if (sessionContainer != null) {
+            var sessionName = sessionContainer.getName();
+            view.sessionNameTextField.setText(sessionName);
+            Session selected = SessionViewModel.sessionTable.get(sessionName);
+            model.setSelectedSession(sessionContainer);
+            model.setSelectedSessionIndex(sessionJList.getSelectedIndex());
+            addToParamMonitorContainer(selected);
+            setSessionSpecificParameters(sessionName);
+            view.clearMatchLists();
+        }
+    }
+
+    private void showDataForSelectedMatchDuringSession() {
+        var paramContainer = (SessionParameterContainer) SessionView.sessionSpecificParameterMatchesJList.getSelectedValue();
+        if (paramContainer != null) {
+            var paramName = paramContainer.getName();
+            var type = paramContainer.getType();
+            var value = paramContainer.getValue();
+            var session = model.getSelectedSession().getName();
+            view.clearMatchLists();
+            renderMatchEntries(type, value, session);
+            setCypherQueryTest(paramName);
+        }
+    }
+
+    private void showParameterMatchDetails() {
+        var parameterMatchContainer = (ParameterMatchContainer) matchJList.getSelectedValue();
+        if (parameterMatchContainer != null) {
+            var value = parameterMatchContainer.getValue();
+            var url = parameterMatchContainer.getUrl();
+            var session = model.getSelectedSession().getName();
+            renderMatchInfo(value, url, session);
+        }
+    }
+
 
     public void addToSessionDefList(SessionDefContainer container) {
         DefaultListModel<SessionDefContainer> model = (DefaultListModel<SessionDefContainer>) sessionDefJList.getModel();
@@ -253,7 +275,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
             model.updateSessionInformation(newSession, sessionName, sessionParameters);
             model.changeDatabaseEntriesAccordingToSession(sessionName, lowestId, highestId);
             this.identifyAuditFindings(sessionName);
-            DBModel.saveSession(newSession);
+            DBModel.saveEntity(newSession);
         }
     }
 
@@ -299,7 +321,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
         sessionContainer.updateRange(id);
         Session session = sessionTable.get(sessionContainer.getName());
         session.setHighestHistoryId(id);
-        DBModel.saveSession(session);
+        DBModel.saveEntity(session);
         view.sessionsPanel.revalidate();
         view.sessionsPanel.repaint();
     }
@@ -334,7 +356,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
         // Update only if the last Session in the list is selected
         if (model.getSelectedSessionIndex() + 1 == sessionJList.getModel().getSize()) {
             // get current list of parameters in sessions
-            ListModel<SessionParameterContainer> parameterList = sessionSpecificParameterJList.getModel();
+            ListModel<SessionParameterContainer> parameterList = sessionSpecificParameterMatchesJList.getModel();
             Vector<SessionParameterContainer> parameterContainerVector = new Vector<>(
                     model.containerConverter.parameterToContainerSessionDef(matchHandler.parameterMatchStorage.values().stream().distinct().toList(), model.getActiveSessionName(), getParamNamesFromSessionDefList()));
 
@@ -394,7 +416,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
         sessionJList.revalidate();
         sessionJList.repaint();
         model.updateSessionInformation(newSession, sessionName, newParameters);
-        DBModel.saveSession(newSession);
+        DBModel.saveEntity(newSession);
     }
 
     public void setSessionSpecificParameters(String sessionName) {
@@ -413,15 +435,10 @@ public class SessionViewController implements ActionListener, ListSelectionListe
     }
 
     public List<ParameterMatch> getSessionSpecificParameters(String sessionName) {
-        List<ParameterMatch> parameters = new ArrayList<>();
         Map<String, String> values = Collections.singletonMap("sessionName", sessionName);
         String query = "MATCH (m:ParameterMatch {session: $sessionName}) RETURN m";
         Result queryResult = DBModel.query(query, values);
-        Iterator<Map<String, Object>> resultIterator = queryResult.queryResults().iterator();
-        while (resultIterator.hasNext()) {
-            Map<?, ?> result = resultIterator.next();
-            parameters.add((ParameterMatch) result.get("m"));
-        }
+        List<ParameterMatch> parameters = CypherQueryHandler.getParameterMatchesFromQueryResult(queryResult);
         return parameters;
     }
 
@@ -471,7 +488,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
         List<ParameterMatch> sessionSpecificParams = getSessionSpecificParameters(sessionName);
         for (ParameterMatch match : sessionSpecificParams) {
             Map<String, String> values = Map.of("name", match.getName(), "type", match.getType(), "value", match.getValue());
-            String valueQuery = "MATCH (p:InputParameter {name: $name, type: $type})-[OCCURS_WITH_VALUE]-(m:InputValue {type: $type, value: $value}) RETURN m";
+            String valueQuery = "MATCH (p:InputParameter {name: $name, type: $type})-[OCCURS_WITH_VALUE]-(o:InputValue {type: $type, value: $value}) RETURN o";
             Result result = DBModel.query(valueQuery, values);
             for (var parameterValue : CypherQueryHandler.getOccurrencesFromQueryResult(result).stream().distinct().toList()) {
                 String sessionEntered = parameterValue.getSession();
@@ -488,7 +505,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
     }
 
     private static void setParametersInList(Vector<SessionParameterContainer> parameters) {
-        DefaultListModel<SessionParameterContainer> model = (DefaultListModel<SessionParameterContainer>) sessionSpecificParameterJList.getModel();
+        DefaultListModel<SessionParameterContainer> model = (DefaultListModel<SessionParameterContainer>) sessionSpecificParameterMatchesJList.getModel();
         model.clear();
         model.addAll(parameters);
     }
@@ -508,6 +525,16 @@ public class SessionViewController implements ActionListener, ListSelectionListe
         identifySessionSpecificParametersAfterDeferMatching();
     }
 
+    private void clearDataForNewSessionDefinition() {
+        sessionCounter = 0;
+        ((DefaultListModel<SessionContainer>) sessionJList.getModel()).clear();
+        model.inputValuesFromSessionDefList.clear();
+        model.parameterValuesAndNames.clear();
+        model.helpers.clear();
+        model.deleteSessionsInDB();
+        sessionTable.clear();
+    }
+
     public void clearDataAndView() {
         model.clearAllData();
         view.clearMatchLists();
@@ -519,7 +546,7 @@ public class SessionViewController implements ActionListener, ListSelectionListe
         listModel2.clear();
         DefaultListModel<SessionParamMonitorContainer> listModel3 = (DefaultListModel<SessionParamMonitorContainer>) view.sessionParamMonitorJList.getModel();
         listModel3.clear();
-        DefaultListModel<SessionParameterContainer> listModel4 = (DefaultListModel<SessionParameterContainer>) sessionSpecificParameterJList.getModel();
+        DefaultListModel<SessionParameterContainer> listModel4 = (DefaultListModel<SessionParameterContainer>) sessionSpecificParameterMatchesJList.getModel();
         listModel4.clear();
         view.revalidate();
         view.repaint();

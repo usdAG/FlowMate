@@ -1,7 +1,6 @@
 package db.entities;
 
 import org.neo4j.ogm.annotation.Id;
-import org.neo4j.ogm.annotation.Transient;
 
 import java.util.Objects;
 
@@ -70,12 +69,12 @@ public class InputValue {
         return type;
     }
 
-    public void setSession(String session) {
-        this.session = session;
-    }
-
     public boolean isExcludedByNoiseReduction() {
         return excludedByNoiseReduction;
+    }
+
+    public void setSession(String session) {
+        this.session = session;
     }
 
     public void setExcludedByNoiseReduction(boolean excludedByNoiseReduction) {

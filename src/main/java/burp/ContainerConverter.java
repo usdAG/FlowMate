@@ -4,7 +4,10 @@ import burp.api.montoya.MontoyaApi;
 import db.CypherQueryHandler;
 import db.DBModel;
 import db.MatchHandler;
-import db.entities.*;
+import db.entities.InputParameter;
+import db.entities.InputValue;
+import db.entities.MatchValue;
+import db.entities.ParameterMatch;
 import gui.container.*;
 import org.neo4j.ogm.model.Result;
 import utils.MessageHashToProxyId;
@@ -33,7 +36,7 @@ public class ContainerConverter {
                 var name = parameter.getName();
                 var type = parameter.getType();
                 Map<String, String> values = Collections.singletonMap("name", name);
-                String query = "MATCH (n:InputParameter {name: $name, type: \"%s\"})-[OCCURS_WITH_VALUE]-(m:InputValue) RETURN m".formatted(type);
+                String query = "MATCH (n:InputParameter {name: $name, type: \"%s\"})-[OCCURS_WITH_VALUE]-(o:InputValue) RETURN o".formatted(type);
                 Result result = DBModel.query(query, values);
                 List<InputValue> inputValueList = new ArrayList<>(CypherQueryHandler.getOccurrencesFromQueryResult(result));
                 int occurrences = inputValueList.size();
@@ -55,7 +58,7 @@ public class ContainerConverter {
 
         for (ParameterMatch match : parameterMatches) {
             Map<String, String> values = Map.of("name", match.getName(), "type", match.getType(), "value", match.getValue());
-            String valueQuery = "MATCH (p:InputParameter {name: $name, type: $type})-[OCCURS_WITH_VALUE]-(m:InputValue {type: $type, value: $value}) RETURN m";
+            String valueQuery = "MATCH (p:InputParameter {name: $name, type: $type})-[OCCURS_WITH_VALUE]-(o:InputValue {type: $type, value: $value}) RETURN o";
             Result result = DBModel.query(valueQuery, values);
             for (var parameterValue : CypherQueryHandler.getOccurrencesFromQueryResult(result).stream().distinct().toList()) {
                 String type = parameterValue.getType();
@@ -136,7 +139,7 @@ public class ContainerConverter {
         Map<String, String> values = Map.of("sessionName", sessionName, "value", value, "type", type);
         String query = "MATCH (m:ParameterMatch {session: $sessionName, value: $value, type: $type}) RETURN m";
         Result result = DBModel.query(query, values);
-        List<ParameterMatch> parameterMatchList = new ArrayList<>(CypherQueryHandler.getMatchesFromQueryResult(result));
+        List<ParameterMatch> parameterMatchList = new ArrayList<>(CypherQueryHandler.getParameterMatchesFromQueryResult(result));
         return parameterMatchList.stream().distinct().filter(e -> e.getName().equals(paramName)).toList().size();
     }
 

@@ -2,11 +2,11 @@ package db.entities;
 
 import org.neo4j.ogm.annotation.Id;
 import org.neo4j.ogm.annotation.Relationship;
-import org.neo4j.ogm.annotation.Transient;
 import utils.Logger;
 import utils.PatternEscape;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -23,7 +23,6 @@ public class InputParameter {
     @Relationship(type = "OCCURS_WITH_VALUE", direction = Relationship.Direction.OUTGOING)
     private List<InputValue> occurrenceEntities = new ArrayList<>();
 
-
     // Empty Constructor needed for neo4J
     public InputParameter() {
 
@@ -37,36 +36,8 @@ public class InputParameter {
         this.excludedByNoiseReduction = false;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public int getIdentifier(){
-        return this.identifier;
-    }
-
-    public String getDomain() {
-        return domain;
-    }
-
-    public String getType() {
-        return this.type;
-    }
-
-    public void addOccurence(InputValue occurrence) {
+    public void addOccurrence(InputValue occurrence) {
         this.occurrenceEntities.add(occurrence);
-    }
-
-    public List<InputValue> getOccurrenceEntities() {
-        return occurrenceEntities;
-    }
-
-    public boolean isExcludedByNoiseReduction() {
-        return excludedByNoiseReduction;
-    }
-
-    public void setExcludedByNoiseReduction(boolean excludedByNoiseReduction) {
-        this.excludedByNoiseReduction = excludedByNoiseReduction;
     }
 
     public Pattern getRegexMatchingValueByIdentifier(int identifier) {
@@ -89,6 +60,7 @@ public class InputParameter {
         try {
             return occurrence.get();
         } catch (Exception ex) {
+            Logger.getInstance().logToError(Arrays.toString(ex.getStackTrace()));
             return null;
         }
     }
@@ -105,6 +77,34 @@ public class InputParameter {
         var escaped = PatternEscape.escapeForRegex(value);
         var regex = String.format("(?i)([^\\s:]+):\\s+(.*%s.*)", escaped);
         return Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getIdentifier(){
+        return this.identifier;
+    }
+
+    public String getDomain() {
+        return domain;
+    }
+
+    public String getType() {
+        return this.type;
+    }
+
+    public List<InputValue> getOccurrenceEntities() {
+        return occurrenceEntities;
+    }
+
+    public boolean isExcludedByNoiseReduction() {
+        return excludedByNoiseReduction;
+    }
+
+    public void setExcludedByNoiseReduction(boolean excludedByNoiseReduction) {
+        this.excludedByNoiseReduction = excludedByNoiseReduction;
     }
 
 

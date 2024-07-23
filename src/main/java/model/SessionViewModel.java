@@ -2,8 +2,8 @@ package model;
 
 import burp.ContainerConverter;
 import burp.HttpListener;
-import burp.RegexMatcher;
 import burp.api.montoya.MontoyaApi;
+import db.CypherQueryHandler;
 import db.DBModel;
 import db.MatchHandler;
 import db.ParameterHandler;
@@ -11,9 +11,7 @@ import db.entities.*;
 import gui.container.SessionContainer;
 import org.neo4j.ogm.model.Result;
 import session.IdentifiedSession;
-import db.entities.Session;
 import session.SessionHelper;
-import db.entities.SessionParameter;
 import utils.Hashing;
 
 import java.util.*;
@@ -119,7 +117,7 @@ public class SessionViewModel {
                     "RETURN n";
             DBModel.executeCypher(query, values);
             Session sessionToSave = connectEntitiesToSessionNode(sessionName, inputValues, parameterMatches, matchValues);
-            DBModel.saveSession(sessionToSave);
+            DBModel.saveEntity(sessionToSave);
             changeInStorages(nodesToChange, sessionName);
         }
     }
@@ -129,11 +127,11 @@ public class SessionViewModel {
         sessionTable.remove(oldName);
         session.setName(newName);
         sessionTable.put(newName, session);
-        DBModel.saveSession(session);
+        DBModel.saveEntity(session);
     }
 
     private void changeInStorages(List<Integer> nodesToChange, String sessionName) {
-        for (InputParameter param : parameterHandler.parameterStorage.values()) {
+        for (InputParameter param : parameterHandler.inputParameterStorage.values()) {
             for (InputValue value : param.getOccurrenceEntities()) {
                 for (Integer id : nodesToChange) {
                     if (value.getIdentifier() == id) {
@@ -143,7 +141,7 @@ public class SessionViewModel {
             }
         }
 
-        for (InputValue value : parameterHandler.parameterValueStorage.values()) {
+        for (InputValue value : parameterHandler.inputValueStorage.values()) {
             for (Integer id : nodesToChange) {
                 if (value.getIdentifier() == id) {
                     value.setSession(sessionName);
@@ -181,66 +179,54 @@ public class SessionViewModel {
     }
 
     private List<InputValue> getInputValuesForSessionRange(String sessionName, int lowestHistoryId, int highestHistoryId) {
-        List<InputValue> inputValues = new ArrayList<>();
-
         String messageHashesArray = identifyMessageHashes(lowestHistoryId, highestHistoryId);
         if (messageHashesArray.isEmpty()) {
             return null;
         }
         String query = "UNWIND %s as X ".formatted(messageHashesArray) +
-                "Match (n:InputValue {messageHash: X}) " +
-                "RETURN n";
+                "Match (o:InputValue {messageHash: X}) " +
+                "RETURN o";
         Result queryResultParameterValues = DBModel.query(query, Map.of());
-        Iterator<Map<String, Object>> resultIterator = queryResultParameterValues.queryResults().iterator();
-        while (resultIterator.hasNext()) {
-            Map<?, ?> result = resultIterator.next();
-            InputValue inputValue = (InputValue) result.get("n");
+
+        List<InputValue> inputValues = CypherQueryHandler.getOccurrencesFromQueryResult(queryResultParameterValues);
+        for (InputValue inputValue : inputValues) {
             inputValue.setSession(sessionName);
-            inputValues.add(inputValue);
         }
 
         return inputValues;
     }
 
     private List<ParameterMatch> getParameterMatchesForSessionRange(String sessionName, int lowestHistoryId, int highestHistoryId) {
-        List<ParameterMatch> parameterMatches = new ArrayList<>();
-
         String messageHashesArray = identifyMessageHashes(lowestHistoryId, highestHistoryId);
         if (messageHashesArray.isEmpty()) {
             return null;
         }
         String query = "UNWIND %s as X ".formatted(messageHashesArray) +
-                "Match (n:ParameterMatch {messageHash: X}) " +
-                "RETURN n";
-        Result queryResultParameterValues = DBModel.query(query, Map.of());
-        Iterator<Map<String, Object>> resultIterator = queryResultParameterValues.queryResults().iterator();
-        while (resultIterator.hasNext()) {
-            Map<?, ?> result = resultIterator.next();
-            ParameterMatch parameterMatch = (ParameterMatch) result.get("n");
+                "Match (m:ParameterMatch {messageHash: X}) " +
+                "RETURN m";
+        Result queryResultParameterMatches = DBModel.query(query, Map.of());
+
+        List<ParameterMatch> parameterMatches = CypherQueryHandler.getParameterMatchesFromQueryResult(queryResultParameterMatches);
+        for (ParameterMatch parameterMatch : parameterMatches) {
             parameterMatch.setSession(sessionName);
-            parameterMatches.add(parameterMatch);
         }
 
         return parameterMatches;
     }
 
     private List<MatchValue> getMatchValuesForSessionRange(String sessionName, int lowestHistoryId, int highestHistoryId) {
-        List<MatchValue> matchValues = new ArrayList<>();
-
         String messageHashesArray = identifyMessageHashes(lowestHistoryId, highestHistoryId);
         if (messageHashesArray.isEmpty()) {
             return null;
         }
         String query = "UNWIND %s as X ".formatted(messageHashesArray) +
-                "Match (n:MatchValue {messageHash: X}) " +
-                "RETURN n";
+                "Match (mv:MatchValue {messageHash: X}) " +
+                "RETURN mv";
         Result queryResultMatchValues = DBModel.query(query, Map.of());
-        Iterator<Map<String, Object>> resultIterator = queryResultMatchValues.queryResults().iterator();
-        while (resultIterator.hasNext()) {
-            Map<?, ?> result = resultIterator.next();
-            MatchValue matchValue = (MatchValue) result.get("n");
+
+        List<MatchValue> matchValues = CypherQueryHandler.getMatchValuesFromQueryResult(queryResultMatchValues);
+        for (MatchValue matchValue : matchValues) {
             matchValue.setSession(sessionName);
-            matchValues.add(matchValue);
         }
 
         return matchValues;

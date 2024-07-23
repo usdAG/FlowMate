@@ -90,23 +90,7 @@ public class RegexMatcher {
                     }
 
                     if (rule.affectsParameterValues()) {
-                        // Apply the rule on parameter values
-                        if (rule.affectsQueryString() && inputValue.getType().equals("GET")) {
-                            Matcher matcher = pattern.matcher(inputValue.getValue());
-                            if (matcher.find()) {
-                                inputValue.setExcludedByNoiseReduction(rule.isActive());
-                            }
-                        } else if (rule.affectsBody() && inputValue.getType().equals("POST")) {
-                            Matcher matcher = pattern.matcher(inputValue.getValue());
-                            if (matcher.find()) {
-                                inputValue.setExcludedByNoiseReduction(rule.isActive());
-                            }
-                        } else if (rule.affectsCookie() && inputValue.getType().equals("COOKIE")) {
-                            Matcher matcher = pattern.matcher(inputValue.getValue());
-                            if (matcher.find()) {
-                                inputValue.setExcludedByNoiseReduction(rule.isActive());
-                            }
-                        }
+                       checkWhichParameterValueIsAffected(rule, pattern, inputValue);
                     }
             }
         }
@@ -116,23 +100,27 @@ public class RegexMatcher {
         for (InputValue inputValue : inputValues) {
             Pattern pattern = Pattern.compile(rule.getRegex(), rule.isCaseInsensitive() ? Pattern.CASE_INSENSITIVE : 0);
             if (rule.affectsParameterValues()) {
-                // Apply the rule on parameter values
-                if (rule.affectsQueryString() && inputValue.getType().equals("GET")) {
-                    Matcher matcher = pattern.matcher(inputValue.getValue());
-                    if (matcher.find()) {
-                        inputValue.setExcludedByNoiseReduction(rule.isActive());
-                    }
-                } else if (rule.affectsBody() && inputValue.getType().equals("POST")) {
-                    Matcher matcher = pattern.matcher(inputValue.getValue());
-                    if (matcher.find()) {
-                        inputValue.setExcludedByNoiseReduction(rule.isActive());
-                    }
-                } else if (rule.affectsCookie() && inputValue.getType().equals("COOKIE")) {
-                    Matcher matcher = pattern.matcher(inputValue.getValue());
-                    if (matcher.find()) {
-                        inputValue.setExcludedByNoiseReduction(rule.isActive());
-                    }
-                }
+                checkWhichParameterValueIsAffected(rule, pattern, inputValue);
+            }
+        }
+    }
+
+    private static void checkWhichParameterValueIsAffected(RuleContainer rule, Pattern pattern, InputValue inputValue) {
+        // Apply the rule on parameter values
+        if (rule.affectsQueryString() && inputValue.getType().equals("GET")) {
+            Matcher matcher = pattern.matcher(inputValue.getValue());
+            if (matcher.find()) {
+                inputValue.setExcludedByNoiseReduction(rule.isActive());
+            }
+        } else if (rule.affectsBody() && inputValue.getType().equals("POST")) {
+            Matcher matcher = pattern.matcher(inputValue.getValue());
+            if (matcher.find()) {
+                inputValue.setExcludedByNoiseReduction(rule.isActive());
+            }
+        } else if (rule.affectsCookie() && inputValue.getType().equals("COOKIE")) {
+            Matcher matcher = pattern.matcher(inputValue.getValue());
+            if (matcher.find()) {
+                inputValue.setExcludedByNoiseReduction(rule.isActive());
             }
         }
     }

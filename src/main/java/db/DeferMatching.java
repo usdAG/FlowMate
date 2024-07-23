@@ -3,7 +3,6 @@ package db;
 import burp.BurpExtender;
 import burp.HttpResponse;
 import burp.HttpResponseParser;
-import burp.RegexMatcher;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.proxy.ProxyHttpRequestResponse;
 import db.entities.*;
@@ -20,8 +19,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 public class DeferMatching implements PropertyChangeListener {
 
@@ -120,7 +119,6 @@ public class DeferMatching implements PropertyChangeListener {
                 List<InputParameter> allInputParameters = pHandler.observableInputParameterList;
                 List<Object> allMatches = new ArrayList<>();
                 Set<Integer> duplicateIdentifiers = new HashSet<>();
-                Set<String> messageHashes = new HashSet<>();
                 List<InputParameter> inputParametersMatchingToHistory = new ArrayList<>();
                 Set<Integer> inputParamIdentifiers = new HashSet<>();
 
@@ -161,7 +159,6 @@ public class DeferMatching implements PropertyChangeListener {
 
                     HttpResponse response = parser.parseResponse(proxyResponse.originalResponse(), proxyResponse.finalRequest());
                     String hash = Hashing.sha1(proxyResponse.finalRequest().toByteArray().getBytes());
-                    messageHashes.add(hash);
 
                     for (InputParameter parameter : allInputParameters) {
                         InputParameter realParam = new InputParameter(parameter.getName(), parameter.getType(), parameter.getDomain());
@@ -171,7 +168,7 @@ public class DeferMatching implements PropertyChangeListener {
                         }
                         for (InputValue value : parameter.getOccurrenceEntities()) {
                             if (hash.equals(value.getMessageHash())) {
-                                realParam.addOccurence(value);
+                                realParam.addOccurrence(value);
                             }
                         }
                         if (realParam.getOccurrenceEntities().isEmpty()) {
