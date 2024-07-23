@@ -37,7 +37,7 @@ public class SessionView extends JScrollPane {
     public static JList<MatchValueContainer> matchInfoJList;
     public static JList<ParameterMatchContainer> matchJList;
     private JScrollPane parameterScrollPane;
-    public static JList<SessionParameterContainer> sessionSpecificParameterJList;
+    public static JList<SessionParameterContainer> sessionSpecificParameterMatchesJList;
 
     public JButton removeFromSessionDefButton;
     public JButton saveSessionDefinitionButton;
@@ -170,11 +170,11 @@ public class SessionView extends JScrollPane {
         parameterListPanel = new JPanel(new MigLayout());
         JLabel parameterListLabel = new JLabel("List of Matches during Session:");
         DefaultListModel<SessionParameterContainer> model2 = new DefaultListModel<>();
-        sessionSpecificParameterJList = new JList<>();
-        sessionSpecificParameterJList.setModel(model2);
-        sessionSpecificParameterJList.setCellRenderer(new SessionParameterListCellRenderer());
+        sessionSpecificParameterMatchesJList = new JList<>();
+        sessionSpecificParameterMatchesJList.setModel(model2);
+        sessionSpecificParameterMatchesJList.setCellRenderer(new SessionParameterListCellRenderer());
 
-        this.parameterScrollPane = new JScrollPane(sessionSpecificParameterJList);
+        this.parameterScrollPane = new JScrollPane(sessionSpecificParameterMatchesJList);
         this.parameterScrollPane.setMinimumSize(new Dimension(390, 450));
         this.parameterScrollPane.setMaximumSize(new Dimension(390, 450));
 

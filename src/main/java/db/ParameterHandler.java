@@ -19,16 +19,16 @@ import java.util.stream.Collectors;
 public class ParameterHandler {
 
     public Hashtable<Integer, Url> urlStorage;
-    public Hashtable<Integer, InputParameter> parameterStorage;
-    public Hashtable<Integer, InputValue> parameterValueStorage;
+    public Hashtable<Integer, InputParameter> inputParameterStorage;
+    public Hashtable<Integer, InputValue> inputValueStorage;
     public ObservableList<InputParameter> observableInputParameterList;
     private boolean hasActiveSession = false;
     private String sessionName;
 
     public ParameterHandler() {
         this.urlStorage = new Hashtable<>();
-        this.parameterStorage = new Hashtable<>();
-        this.parameterValueStorage = new Hashtable<>();
+        this.inputParameterStorage = new Hashtable<>();
+        this.inputValueStorage = new Hashtable<>();
         this.observableInputParameterList = new ObservableList<>();
         loadUrls();
         loadParameters();
@@ -44,14 +44,14 @@ public class ParameterHandler {
     public void loadParameters() {
        List<InputParameter> inputParameterEntityList = DBModel.loadAllParameters().stream().toList();
        List<Integer> identifiers = inputParameterEntityList.stream().map(InputParameter::getIdentifier).toList();
-       parameterStorage.putAll(combineListsIntoParameterEntityMap(identifiers, inputParameterEntityList));
+       inputParameterStorage.putAll(combineListsIntoParameterEntityMap(identifiers, inputParameterEntityList));
        observableInputParameterList.addAll(inputParameterEntityList);
     }
 
     public void loadParameterOccurrences() {
         List<InputValue> inputValueEntityList = DBModel.loadAllParameterOccurrenceEntities().stream().toList();
         List<Integer> identifiers = inputValueEntityList.stream().map(InputValue::getIdentifier).toList();
-        parameterValueStorage.putAll(combineListsIntoParameterOccurrenceMap(identifiers, inputValueEntityList));
+        inputValueStorage.putAll(combineListsIntoParameterOccurrenceMap(identifiers, inputValueEntityList));
     }
 
     Map<Integer, InputParameter> combineListsIntoParameterEntityMap(List<Integer> keys, List<InputParameter> values) {
@@ -123,12 +123,12 @@ public class ParameterHandler {
         // If not, add it to the list of known Urls and save the Url + InputParameter in the DB
         if (!urlExistsInDB(newUrlEntity)) {
             newInputParameterEntity.addOccurrence(newInputValue);
-            this.parameterValueStorage.put(newInputValue.getIdentifier(), newInputValue);
+            this.inputValueStorage.put(newInputValue.getIdentifier(), newInputValue);
             newUrlEntity.addParameterFoundInUrl(newInputParameterEntity);
             this.urlStorage.put(newUrlEntity.getIdentifier(), newUrlEntity);
-            parameterStorage.put(newInputParameterEntity.getIdentifier(), newInputParameterEntity);
-            GettingStartedView.numberOfParameterValues.setText(String.valueOf(parameterValueStorage.size()));
-            GettingStartedView.numberOfParameters.setText(String.valueOf(parameterStorage.size()));
+            inputParameterStorage.put(newInputParameterEntity.getIdentifier(), newInputParameterEntity);
+            GettingStartedView.numberOfParameterValues.setText(String.valueOf(inputValueStorage.size()));
+            GettingStartedView.numberOfParameters.setText(String.valueOf(inputParameterStorage.size()));
             GettingStartedView.numberOfUrls.setText(String.valueOf(urlStorage.size()));
             DBModel.saveEntity(newInputParameterEntity);
             DBModel.saveEntity(newUrlEntity);
@@ -140,12 +140,12 @@ public class ParameterHandler {
             if (!parameterExistsInUrlEntity(relatedUrlEntity, newInputParameterEntity)) {
                 if(!occurrenceAlreadyExists(newInputValue)) {
                     newInputParameterEntity.addOccurrence(newInputValue);
-                    this.parameterValueStorage.put(newInputValue.getIdentifier(), newInputValue);
-                    GettingStartedView.numberOfParameterValues.setText(String.valueOf(parameterValueStorage.size()));
+                    this.inputValueStorage.put(newInputValue.getIdentifier(), newInputValue);
+                    GettingStartedView.numberOfParameterValues.setText(String.valueOf(inputValueStorage.size()));
                 }
                 relatedUrlEntity.addParameterFoundInUrl(newInputParameterEntity);
-                parameterStorage.put(newInputParameterEntity.getIdentifier(), newInputParameterEntity);
-                GettingStartedView.numberOfParameters.setText(String.valueOf(parameterStorage.size()));
+                inputParameterStorage.put(newInputParameterEntity.getIdentifier(), newInputParameterEntity);
+                GettingStartedView.numberOfParameters.setText(String.valueOf(inputParameterStorage.size()));
                 DBModel.saveEntity(newInputParameterEntity);
                 DBModel.saveEntity(relatedUrlEntity);
                 this.observableInputParameterList.add(newInputParameterEntity);
@@ -153,8 +153,8 @@ public class ParameterHandler {
                 InputParameter existingEntity = getExistingParameter(newInputParameterEntity.getIdentifier());
                 if (!occurrenceAlreadyExists(newInputValue)) {
                     existingEntity.addOccurrence(newInputValue);
-                    this.parameterValueStorage.put(newInputValue.getIdentifier(), newInputValue);
-                    GettingStartedView.numberOfParameterValues.setText(String.valueOf(parameterValueStorage.size()));
+                    this.inputValueStorage.put(newInputValue.getIdentifier(), newInputValue);
+                    GettingStartedView.numberOfParameterValues.setText(String.valueOf(inputValueStorage.size()));
                     DBModel.saveEntity(existingEntity);
                     this.observableInputParameterList.add(newInputParameterEntity);
                 }
@@ -169,11 +169,11 @@ public class ParameterHandler {
     }
 
     private InputParameter getExistingParameter(int identifier) {
-        return parameterStorage.get(identifier);
+        return inputParameterStorage.get(identifier);
     }
 
     private boolean occurrenceAlreadyExists(InputValue newInputValueEntity) {
-        return this.parameterValueStorage.containsKey(newInputValueEntity.getIdentifier());
+        return this.inputValueStorage.containsKey(newInputValueEntity.getIdentifier());
     }
 
     private boolean parameterExistsInUrlEntity(Url relatedUrlEntity, InputParameter newInputParameterEntity) {
@@ -196,7 +196,7 @@ public class ParameterHandler {
     }
 
     public List<InputParameter> getAllParameters(){
-        return parameterStorage.values().stream().toList();
+        return inputParameterStorage.values().stream().toList();
     }
     public List<InputParameter> getRelevant(String domain){
         var all = this.getAllParameters();
@@ -219,8 +219,8 @@ public class ParameterHandler {
     }
 
     public void clearAllStorages() {
-        parameterStorage.clear();
-        parameterValueStorage.clear();
+        inputParameterStorage.clear();
+        inputValueStorage.clear();
         urlStorage.clear();
         observableInputParameterList.clear();
     }

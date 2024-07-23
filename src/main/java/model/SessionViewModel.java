@@ -131,7 +131,7 @@ public class SessionViewModel {
     }
 
     private void changeInStorages(List<Integer> nodesToChange, String sessionName) {
-        for (InputParameter param : parameterHandler.parameterStorage.values()) {
+        for (InputParameter param : parameterHandler.inputParameterStorage.values()) {
             for (InputValue value : param.getOccurrenceEntities()) {
                 for (Integer id : nodesToChange) {
                     if (value.getIdentifier() == id) {
@@ -141,7 +141,7 @@ public class SessionViewModel {
             }
         }
 
-        for (InputValue value : parameterHandler.parameterValueStorage.values()) {
+        for (InputValue value : parameterHandler.inputValueStorage.values()) {
             for (Integer id : nodesToChange) {
                 if (value.getIdentifier() == id) {
                     value.setSession(sessionName);

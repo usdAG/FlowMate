@@ -49,13 +49,13 @@ public class HttpListener implements HttpHandler {
 
     @Override
     public RequestToBeSentAction handleHttpRequestToBeSent(HttpRequestToBeSent requestToBeSent) {
-        if(detectionIsActive) {
+        if (detectionIsActive) {
             // Ignores the probe request as the originate from toolFlag 1024 == Burp Extender (Alternative could be by using the User-Agent header in the request)
-            if(requestToBeSent.toolSource().isFromTool(ToolType.EXTENSIONS) || requestToBeSent.toolSource().isFromTool(ToolType.REPEATER))
+            if (requestToBeSent.toolSource().isFromTool(ToolType.EXTENSIONS) || requestToBeSent.toolSource().isFromTool(ToolType.REPEATER))
                 return continueWith(requestToBeSent);
 
             // Ignore requests out of scope
-            if(!api.scope().isInScope(requestToBeSent.url()))
+            if (!api.scope().isInScope(requestToBeSent.url()))
                 return continueWith(requestToBeSent);
 
             this.messageHash = Hashing.sha1(requestToBeSent.toByteArray().getBytes());
@@ -79,12 +79,12 @@ public class HttpListener implements HttpHandler {
             if (responseReceived.toolSource().isFromTool(ToolType.EXTENSIONS) || responseReceived.toolSource().isFromTool(ToolType.REPEATER))
                 return ResponseReceivedAction.continueWith(responseReceived);
 
+            // Ignore requests out of scope
+            if (!api.scope().isInScope(responseReceived.initiatingRequest().url()))
+                return ResponseReceivedAction.continueWith(responseReceived);
+
             var reqParsed = this.parseRequest(responseReceived.initiatingRequest());
             var respParsed = this.parseResponse(responseReceived, responseReceived.initiatingRequest());
-
-            // Ignore requests out of scope
-            if(!api.scope().isInScope(responseReceived.initiatingRequest().url()))
-                return ResponseReceivedAction.continueWith(responseReceived);
 
             var requestDomain = reqParsed.Url.getHost();
             // Searching for matching parameters
