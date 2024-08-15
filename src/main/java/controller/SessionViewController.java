@@ -540,6 +540,8 @@ public class SessionViewController implements ActionListener, ListSelectionListe
         view.clearMatchLists();
         view.cypherQueryField.setText("");
         view.sessionNameTextField.setText("");
+        parameterHandler.setSessionName("not set");
+        matchHandler.setSessionName("not");
         DefaultListModel<SessionDefContainer> listModel1 = (DefaultListModel<SessionDefContainer>) sessionDefJList.getModel();
         listModel1.clear();
         DefaultListModel<SessionContainer> listModel2 = (DefaultListModel<SessionContainer>)  sessionJList.getModel();

@@ -11,6 +11,10 @@ import db.MatchHandler;
 import db.ParameterHandler;
 import db.entities.InputParameter;
 import db.entities.SessionParameter;
+import events.DeferMatchingFinishedEvent;
+import events.DeferMatchingFinishedListener;
+import events.ItemsAddedEvent;
+import events.ItemsAddedListener;
 import utils.Hashing;
 
 import java.util.ArrayList;
@@ -31,6 +35,8 @@ public class HttpListener implements HttpHandler {
     private String messageHash;
     private int messageId;
 
+    private List<ItemsAddedListener> listeners;
+
 
     public HttpListener(MontoyaApi api, CrossSessionAudit crossSessionAuditor, CrossContentTypeAudit crossContentTypeAuditor,
                         CrossScopeAudit crossScopeAuditor, HeaderMatchAudit headerMatchAuditor, LongDistanceMatchAudit longDistanceMatchAuditor,
@@ -44,6 +50,22 @@ public class HttpListener implements HttpHandler {
         this.messageId = 0;
         this.messageHash = "";
         monitoredParameter = new ArrayList<>();
+        this.listeners = new ArrayList<>();
+    }
+
+    public void removeItemsAddedListener(ItemsAddedListener listener) {
+        this.listeners.remove(listener);
+    }
+
+    public void addItemsAddedListener(ItemsAddedListener listener) {
+        this.listeners.add(listener);
+    }
+
+    private void fireItemsAddedEvent() {
+        ItemsAddedEvent event = new ItemsAddedEvent(this);
+        for (ItemsAddedListener listener : this.listeners) {
+            listener.onItemsAddedEvent();
+        }
     }
 
 
@@ -63,11 +85,15 @@ public class HttpListener implements HttpHandler {
             var reqParsed = this.parseRequest(requestToBeSent);
 
             if (reqParsed != null) {
-                parameterHandler.addParameters(reqParsed.parameterHelpers, messageHash);
+                List<Object> parametersList = parameterHandler.addParameters(reqParsed.parameterHelpers, messageHash);
+                DBModel.saveBulk(parametersList);
+
             }
             if (hasActiveSession) {
                 this.monitorSessionParameters(requestToBeSent);
             }
+
+            fireItemsAddedEvent();
         }
         return continueWith(requestToBeSent);
     }
@@ -92,6 +118,8 @@ public class HttpListener implements HttpHandler {
             var newMatches = respParser.getMatches(respParsed, noiseReeducatedParameters, messageHash);
             List<Object> matchesList = matchHandler.addMatches(newMatches);
             DBModel.saveBulk(matchesList);
+
+            fireItemsAddedEvent();
 
             SessionViewController.updateParameterListInActiveSession();
         }

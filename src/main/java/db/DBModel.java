@@ -173,12 +173,49 @@ public class DBModel {
     }
 
     public static void saveBulk(List<Object> entities) {
+        Throwable txEx = null;
+        int RETRIES = 20;
+        int BACKOFF = 3000;
         Session session = sessionFactory.openSession();
-        try (Transaction tx = session.beginTransaction()) {
-            session.save(entities);
-            tx.commit();
+        for ( int i = 0; i < RETRIES; i++ ) {
+            try ( Transaction tx = session.beginTransaction() ) {
+                session.save(entities);
+                tx.commit();
+                session.clear();
+                return;
+            } catch ( Throwable ex ) {
+                txEx = ex;
+
+                // Add whatever exceptions to retry on here
+                if ( !(ex instanceof DeadlockDetectedException || ex instanceof TransientException) ) {
+                    break;
+                }
+            }
+
+            // Wait so that we don't immediately get into the same deadlock
+            if ( i < RETRIES - 1 ) {
+                try {
+                    Thread.sleep( BACKOFF );
+                } catch ( InterruptedException e ) {
+                    TransactionFailureException exception = new TransactionFailureException( "Interrupted", e );
+                    Logger.getInstance().logToError(Arrays.toString(exception.getStackTrace()));
+                    throw exception;
+                }
+            }
         }
+
         session.clear();
+
+        if ( txEx instanceof TransactionFailureException ) {
+            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
+            throw ((TransactionFailureException) txEx);
+        } else if ( txEx instanceof Error ) {
+            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
+            throw ((Error) txEx);
+        } else {
+            Logger.getInstance().logToError(Arrays.toString(txEx.getStackTrace()));
+            throw ((RuntimeException) txEx);
+        }
     }
 
     public static void purgeDatabase() {

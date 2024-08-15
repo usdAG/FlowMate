@@ -129,7 +129,7 @@ public class QueryView extends JScrollPane {
     private JPanel initParameterList() {
         JPanel parameterListPanel = new JPanel(new MigLayout());
         JLabel parameterListLabel = new JLabel("List of Parameters:");
-        this.parameterJList = new JList<>(containerConverter.parameterToContainer(this.parameterHandler.observableInputParameterList.stream().toList()));
+        this.parameterJList = new JList<>(containerConverter.parameterToContainer(this.parameterHandler.inputParameterStorage.values().stream().toList()));
         this.parameterJList.setCellRenderer(new ParameterListCellRenderer());
         this.parameterScrollPane = new JScrollPane(parameterJList);
 

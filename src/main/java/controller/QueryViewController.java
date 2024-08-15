@@ -7,11 +7,7 @@ import db.MatchHandler;
 import db.ParameterHandler;
 import db.entities.InputParameter;
 import db.entities.MatchValue;
-import db.entities.ParameterMatch;
-import events.ListChangeEvent;
-import events.ListChangeListener;
-import events.RuleContainerEvent;
-import events.RuleContainerListener;
+import events.*;
 import gui.QueryView;
 import gui.container.*;
 import model.QueryViewModel;
@@ -27,7 +23,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class QueryViewController implements ActionListener, ListSelectionListener, RuleContainerListener {
+public class QueryViewController implements ActionListener, ListSelectionListener, RuleContainerListener, DeferMatchingFinishedListener, ItemsAddedListener {
 
     private MontoyaApi api;
     private QueryView view;
@@ -87,30 +83,6 @@ public class QueryViewController implements ActionListener, ListSelectionListene
         });
 
         view.sendToSessionDef.addActionListener(this);
-
-        // Listener for InputParameter and Matchlist. If an item gets added to any of these list, the parameterlist needs
-        // to be updated
-        this.parameterHandler.observableInputParameterList.addListener(new ListChangeListener<InputParameter>() {
-            @Override
-            public void onChanged(ListChangeEvent<? extends InputParameter> change) {
-                while (change.next()) {
-                    if (change.wasAdded()) {
-                        updateParameters();
-                    }
-                }
-            }
-        });
-
-        this.matchHandler.observableParameterMatchList.addListener(new ListChangeListener<ParameterMatch>() {
-            @Override
-            public void onChanged(ListChangeEvent<? extends ParameterMatch> change) {
-                while (change.next()) {
-                    if (change.wasAdded()) {
-                        updateParameters();
-                    }
-                }
-            }
-        });
     }
 
     // ActionListener for sort-label, search-field and right-click menu
@@ -165,7 +137,7 @@ public class QueryViewController implements ActionListener, ListSelectionListene
 
     private void hideExcludedParametersAction() {
         this.hideParamsExcludedByNoiseReduction = view.hideExcludedParamsCheckBox.isSelected();
-        view.parameterJList.setListData(new Vector<>(filterExcludedParams(containerConverter.parameterToContainer(this.parameterHandler.observableInputParameterList))));
+        view.parameterJList.setListData(new Vector<>(filterExcludedParams(containerConverter.parameterToContainer(this.parameterHandler.inputParameterStorage.values().stream().toList()))));
     }
 
     private void showDataForSelectedParameter() {
@@ -215,9 +187,9 @@ public class QueryViewController implements ActionListener, ListSelectionListene
         view.rightMidPanel.revalidate();
     }
 
-    private void updateParameters() {
+    public void updateParameters() {
         Comparator<ParameterContainer> comparator = getSortSettings();
-        List<InputParameter> parameters = this.parameterHandler.observableInputParameterList.stream().toList();
+        List<InputParameter> parameters = this.parameterHandler.inputParameterStorage.values().stream().toList();
         Vector<ParameterContainer> parameterContainerVector;
         parameterContainerVector = new Vector<>(
                 containerConverter.parameterToContainer(parameters.stream().toList())
@@ -371,8 +343,20 @@ public class QueryViewController implements ActionListener, ListSelectionListene
             ruleContainer.setActive(false);
         }
         this.parameterHandler.updateParameterExclusion(ruleContainer);
-        List<Object> bulkSaveList = new ArrayList<>(this.parameterHandler.observableInputParameterList);
+        List<Object> bulkSaveList = new ArrayList<>(this.parameterHandler.inputParameterStorage.values());
         DBModel.saveBulk(bulkSaveList);
+        List<Object> bulkSaveInputValues = new ArrayList<>(this.parameterHandler.inputValueStorage.values());
+        DBModel.saveBulk(bulkSaveInputValues);
+        updateParameters();
+    }
+
+    @Override
+    public void onDeferMatchingFinishedEvent() {
+        updateParameters();
+    }
+
+    @Override
+    public void onItemsAddedEvent() {
         updateParameters();
     }
 
@@ -386,7 +370,7 @@ public class QueryViewController implements ActionListener, ListSelectionListene
             var newValue = ((TextField)event.getSource()).getText();
             if (newValue == null | newValue.isEmpty()) {
                 //Show all as no value entered
-                view.parameterJList.setListData(new Vector<>(filterExcludedParams(containerConverter.parameterToContainer(view.parameterHandler.observableInputParameterList.stream().toList()))));
+                view.parameterJList.setListData(new Vector<>(filterExcludedParams(containerConverter.parameterToContainer(view.parameterHandler.inputParameterStorage.values().stream().toList()))));
                 filterParameterList();
                 view.hideExcludedParamsCheckBox.setEnabled(true);
             }
@@ -403,7 +387,7 @@ public class QueryViewController implements ActionListener, ListSelectionListene
             }
             else {
                 var newParams = new Vector<ParameterContainer>();
-                var currentParams = filterExcludedParams(containerConverter.parameterToContainer(view.parameterHandler.observableInputParameterList.stream().toList()));
+                var currentParams = filterExcludedParams(containerConverter.parameterToContainer(view.parameterHandler.inputParameterStorage.values().stream().toList()));
                 for (var paramContainer : currentParams) {
                     if (paramContainer.getName().contains(newValue)) {
                         newParams.add(paramContainer);

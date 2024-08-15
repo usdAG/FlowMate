@@ -135,22 +135,26 @@ public class PropertiesHandler {
         List<RuleContainer> rules = new ArrayList<>();
         for (String key : keys) {
             List<String> rule = this.api.persistence().extensionData().getStringList(key);
-            // List order of Elements is name, regex, affectsParameterNames, affectsParameterValues,
-            // affectsHeader, affectsBody, affectsCookie, active, caseSensitive, hash (10 Elements)
-            String name = rule.get(0);
-            String regex = rule.get(1);
-            boolean affectsParameterNames = Boolean.parseBoolean(rule.get(2));
-            boolean affectsParameterValues = Boolean.parseBoolean(rule.get(3));
-            boolean affectsHeader = Boolean.parseBoolean(rule.get(4));
-            boolean affectsBody = Boolean.parseBoolean(rule.get(5));
-            boolean affectsCookie = Boolean.parseBoolean(rule.get(6));
-            boolean active = Boolean.parseBoolean(rule.get(7));
-            boolean caseInsensitive = Boolean.parseBoolean(rule.get(8));
-            RuleContainer ruleContainer = new RuleContainer(name, regex, affectsParameterNames,
-                    affectsParameterValues, affectsHeader, affectsBody, affectsCookie, active, caseInsensitive);
+            RuleContainer ruleContainer = extractRuleContainerFromList(rule);
             rules.add(ruleContainer);
         }
         return rules;
+    }
+
+    private RuleContainer extractRuleContainerFromList(List<String> ruleList) {
+        // List order of Elements is name, regex, affectsParameterNames, affectsParameterValues,
+        // affectsHeader, affectsBody, affectsCookie, active, caseSensitive, hash (10 Elements)
+        String name = ruleList.get(0);
+        String regex = ruleList.get(1);
+        boolean affectsParameterNames = Boolean.parseBoolean(ruleList.get(2));
+        boolean affectsParameterValues = Boolean.parseBoolean(ruleList.get(3));
+        boolean affectsHeader = Boolean.parseBoolean(ruleList.get(4));
+        boolean affectsBody = Boolean.parseBoolean(ruleList.get(5));
+        boolean affectsCookie = Boolean.parseBoolean(ruleList.get(6));
+        boolean active = Boolean.parseBoolean(ruleList.get(7));
+        boolean caseInsensitive = Boolean.parseBoolean(ruleList.get(8));
+        return new RuleContainer(name, regex, affectsParameterNames,
+                affectsParameterValues, affectsHeader, affectsBody, affectsCookie, active, caseInsensitive);
     }
 
     public void setDefaultRulesOnFirstLoad() {

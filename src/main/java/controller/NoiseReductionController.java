@@ -188,7 +188,12 @@ public class NoiseReductionController implements ActionListener, ListSelectionLi
         int index = view.ruleList.getSelectedIndex();
         if (ruleContainer != null && index != -1) {
             String oldRuleHash = String.valueOf(ruleContainer.getHash());
+            // Deactivate the old rule and apply deactivation
+            ruleContainer.setActive(false);
+            fireRuleContainerChanged(ruleContainer, false);
+            // Set properties of new rule
             ruleContainer.updateValues(name, regex, affectsParamName, affectsParamValue, affectsHeader, affectsBody, affectsCookie, active, caseInsensitive);
+            // Apply changes
             model.updateRuleInState(ruleContainer, oldRuleHash);
             updateListPanel();
             fireRuleContainerChanged(ruleContainer, false);

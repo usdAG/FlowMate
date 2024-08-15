@@ -3,6 +3,7 @@ package gui;
 import burp.BurpExtender;
 import burp.HttpListener;
 import burp.PropertiesHandler;
+import burp.RetroactiveParser;
 import burp.api.montoya.MontoyaApi;
 import controller.NoiseReductionController;
 import controller.QueryViewController;
@@ -14,6 +15,7 @@ import db.ParameterHandler;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -30,6 +32,7 @@ public class GettingStartedView extends JScrollPane {
     private QueryViewController queryViewController;
     private AuditFindingView auditFindingView;
     private SessionViewController sessionViewController;
+    private RetroactiveParser retroactiveParser;
     private JEditorPane correctStateHeadline;
     public static JLabel numberOfParameters = new JLabel();
     public static JLabel numberOfParameterValues = new JLabel();
@@ -37,14 +40,17 @@ public class GettingStartedView extends JScrollPane {
     public static JLabel numberOfMatchValues = new JLabel();
     public static JLabel numberOfUrls = new JLabel();
     public static JCheckBox detectionActiveCheckbox;
-
     private JButton matchButton;
-
     private JButton purgeButton;
+    private JEditorPane startValueSetInfoPane;
+    private JEditorPane endValueSetInfoPane;
+    private int startValue;
+    private int endValue;
 
     public GettingStartedView(MontoyaApi api, PropertiesHandler propertiesHandler, DeferMatching deferMatching,
                               ParameterHandler parameterHandler, MatchHandler matchHandler, NoiseReductionController noiseReductionController,
-                              QueryViewController queryViewController, AuditFindingView auditFindingView, SessionViewController sessionViewController) {
+                              QueryViewController queryViewController, AuditFindingView auditFindingView, SessionViewController sessionViewController,
+                              RetroactiveParser retroactiveParser) {
         this.api = api;
         this.propertiesHandler = propertiesHandler;
         this.deferMatching = deferMatching;
@@ -54,6 +60,9 @@ public class GettingStartedView extends JScrollPane {
         this.queryViewController = queryViewController;
         this.auditFindingView = auditFindingView;
         this.sessionViewController = sessionViewController;
+        this.retroactiveParser = retroactiveParser;
+        this.startValue = -1;
+        this.endValue = -1;
         JPanel mainPanel = new JPanel(new MigLayout());
         mainPanel.add(renderHowToUse(), "wrap");
         mainPanel.add(renderGettingStarted());
@@ -155,7 +164,17 @@ public class GettingStartedView extends JScrollPane {
         infoLabel.setEditable(false);
         infoLabel.setOpaque(true);
         infoLabel.setContentType("text/html");
-        infoLabel.setText("<html><b>Click the \"Match Now\" Button to identify Matches</b></html>");
+        infoLabel.setText("""
+                <html>
+                <b>Click the "Match Now" Button to identify Matches</b>
+                <br>
+                <b>Note:</b> The starting point of the matching is either the burp history entries from the point where FlowMate was loaded,
+                <br>
+                or after a "Purge Database" reset.
+                <br>
+                If retroactive parsing was performed, the starting point of the matching is the start point set in retroactive parsing.
+                </html>
+                """);
         matchButton = new JButton("Match Now");
         matchButton.addActionListener(new ActionListener() {
             @Override
@@ -174,6 +193,8 @@ public class GettingStartedView extends JScrollPane {
 
         panel.add(infoLabel, "gaptop 5");
         panel.add(matchButton, "gapleft 5");
+
+        panel.add(renderRetroactiveParsePane(), "gaptop 5");
 
         panel.add(renderStatistics(), "wrap");
 
@@ -243,6 +264,83 @@ public class GettingStartedView extends JScrollPane {
         return togglePanel;
     }
 
+    public JPanel renderRetroactiveParsePane() {
+        JPanel panel = new JPanel(new MigLayout());
+
+        JEditorPane header = new JEditorPane();
+        header.setEditable(false);
+        header.setOpaque(true);
+        header.setContentType("text/html");
+        header.setText("<html><h2>Retroactive Parameter Parsing</h2></html>");
+
+        JEditorPane infoPane = new JEditorPane();
+        infoPane.setEditable(false);
+        infoPane.setOpaque(true);
+        infoPane.setContentType("text/html");
+        infoPane.setText("""
+                <html>
+                If FlowMate was started after already browsing the web application, Retroactive Parsing allows the parsing of parameters from the Burp history. <br>
+                <b>Note:</b> If payloads have already been submitted in the web application, they will be parsed and extracted as well.”
+                <br><br>
+                <b>Start Point:</b> Set the start point via the context menu in your Burp history <br>
+                <b>End Point:</b> Set the end point via the context menu in your Burp history <br>
+                <b>Note:</b> Select show all items in the history filter settings to view all entries in the history.
+                </html>
+                """);
+
+
+        JLabel startValueLabel = new JLabel("Start point:");
+        JLabel endValueLabel = new JLabel("End point:");
+        startValueSetInfoPane = new JEditorPane();
+        startValueSetInfoPane.setEditable(false);
+        startValueSetInfoPane.setOpaque(true);
+        startValueSetInfoPane.setContentType("text/html");
+        startValueSetInfoPane.setText("""
+            <html>
+            <h3>is NOT set </h3>
+            </html>
+            """);
+
+        endValueSetInfoPane = new JEditorPane();
+        endValueSetInfoPane.setEditable(false);
+        endValueSetInfoPane.setOpaque(true);
+        endValueSetInfoPane.setContentType("text/html");
+        endValueSetInfoPane.setText("""
+            <html>
+            <h3>is NOT set </h3>
+            </html>
+            """);
+
+
+        startValueSetInfoPane.setMinimumSize(new Dimension(100,20));
+        endValueSetInfoPane.setMinimumSize(new Dimension(100,20));
+
+        JButton startParsingButton = new JButton("Start Retroactive Parsing");
+
+        startParsingButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                if (startValue != -1 && endValue != -1) {
+                    BurpExtender.historyStart = startValue;
+                    propertiesHandler.saveHistoryStartValueInState(startValue);
+                    retroactiveParser.init(startValue, endValue);
+                } else {
+                    JOptionPane.showMessageDialog(panel, "Set Start and End point from Context menu in Burp history.", "Warning", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+        });
+
+        panel.add(header, "wrap");
+        panel.add(infoPane, "wrap");
+        panel.add(startValueLabel, "split 2");
+        panel.add(startValueSetInfoPane, "wrap");
+        panel.add(endValueLabel, "split 2");
+        panel.add(endValueSetInfoPane, "wrap");
+        panel.add(startParsingButton, "wrap");
+
+        return panel;
+    }
+
     public JPanel renderDbPurgePane() {
         JPanel panel = new JPanel(new MigLayout());
 
@@ -288,6 +386,7 @@ public class GettingStartedView extends JScrollPane {
                     queryViewController.clearDataAndView();
                     HttpListener.monitoredParameter.clear();
                     HttpListener.hasActiveSession = false;
+                    resetStartEndValues();
                 }
             }
         });
@@ -298,6 +397,40 @@ public class GettingStartedView extends JScrollPane {
 
 
         return panel;
+    }
+
+    public void setStartValue(int startValue) {
+        this.startValue = startValue;
+        startValueSetInfoPane.setText("""
+                <html>
+                <h3 style="color:green">is set</h3>
+                </html>
+                """);
+    }
+
+    public void setEndValue(int endValue) {
+        this.endValue = endValue;
+        endValueSetInfoPane.setText("""
+                <html>
+                <h3 style="color:green">is set</h3>
+                </html>
+                """);
+    }
+
+    private void resetStartEndValues() {
+        startValue = -1;
+        endValue = -1;
+
+        startValueSetInfoPane.setText("""
+                <html>
+                <h3>is NOT set</h3>
+                </html>
+                """);
+        endValueSetInfoPane.setText("""
+                <html>
+                <h3>is NOT set</h3>
+                </html>
+                """);
     }
 
     private void resetStatistics() {

@@ -122,7 +122,7 @@ public class ContainerConverter {
     }
 
     public int getNumberOfMatchesForParameterName(String paramName, String type) {
-        List<ParameterMatch> parameterMatchList = new ArrayList<>(this.matchHandler.observableParameterMatchList.stream().toList());
+        List<ParameterMatch> parameterMatchList = new ArrayList<>(this.matchHandler.parameterMatchStorage.values());
         List<Integer> duplicates = new ArrayList<>();
         List<ParameterMatch> correctParameterMatchList = new ArrayList<>();
         for (var match : parameterMatchList) {
