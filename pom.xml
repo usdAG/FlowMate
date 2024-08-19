@@ -63,7 +63,7 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-ogm-bolt-driver</artifactId>
-            <version>4.0.10</version>
+            <version>4.0.11</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.neo4j.client/neo4j-browser -->
         <dependency>
