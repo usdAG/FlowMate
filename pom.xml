@@ -47,13 +47,13 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-bolt</artifactId>
-            <version>5.16.0</version>
+            <version>5.26.4</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.neo4j/neo4j -->
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j</artifactId>
-            <version>5.16.0</version>
+            <version>5.26.7</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
@@ -63,7 +63,7 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-ogm-bolt-driver</artifactId>
-            <version>4.0.9</version>
+            <version>4.0.17</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.neo4j.client/neo4j-browser -->
         <dependency>
@@ -74,7 +74,7 @@
         <dependency>
             <groupId>org.neo4j.app</groupId>
             <artifactId>neo4j-server</artifactId>
-            <version>5.16.0</version>
+            <version>5.22.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.neo4j/neo4j-native -->
         <dependency>
@@ -111,7 +111,7 @@
         <dependency>
             <groupId>com.opencsv</groupId>
             <artifactId>opencsv</artifactId>
-            <version>5.9</version>
+            <version>5.11.1</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
         <dependency>
@@ -124,7 +124,7 @@
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
-            <version>21.0.1</version>
+            <version>21.0.4-ea+1</version>
         </dependency>
         <dependency>
             <groupId>org.commonmark</groupId>
