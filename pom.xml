@@ -34,6 +34,16 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>versions-maven-plugin</artifactId>
+            <version>2.7</version>
+            <configuration>
+                <excludes>
+                    <exclude>net.portswigger.burp.extensions</exclude>
+                </excludes>
+            </configuration>
+        </plugin>
         </plugins>
     </build>
     <dependencies>
@@ -96,12 +106,20 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
+<<<<<<< HEAD
             <version>3.14.0</version>
+=======
+            <version>3.18.0</version>
+>>>>>>> e7dcda8 (Update dependencies)
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-text</artifactId>
+<<<<<<< HEAD
             <version>1.11.0</version>
+=======
+            <version>1.13.1</version>
+>>>>>>> e7dcda8 (Update dependencies)
         </dependency>
         <dependency>
             <groupId>com.miglayout</groupId>
@@ -141,7 +159,11 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
+<<<<<<< HEAD
             <version>2.15.1</version>
+=======
+            <version>2.19.0</version>
+>>>>>>> e7dcda8 (Update dependencies)
         </dependency>
 
     </dependencies>
