@@ -7,12 +7,11 @@ import db.entities.ParameterMatch;
 import db.entities.Session;
 import db.entities.Url;
 import gui.GettingStartedView;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import model.SessionViewModel;
 import utils.Logger;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 // Handles the logic behind new-found matches
 public class MatchHandler {
@@ -20,8 +19,6 @@ public class MatchHandler {
     private ParameterHandler parameterHandler;
     public Hashtable<Integer, MatchValue> matchValueStorage;
     public Hashtable<Integer, ParameterMatch> parameterMatchStorage;
-    public ObservableList<ParameterMatch> observableParameterMatchList;
-    public ObservableList<ParameterMatch> observableParameterMatchListSession;
     private boolean hasActiveSession = false;
     private String sessionName;
     private CrossSessionAudit crossSessionAudit;
@@ -38,8 +35,6 @@ public class MatchHandler {
         this.matchValueStorage = new Hashtable<>();
         this.parameterMatchStorage = new Hashtable<>();
         this.parameterHandler = parameterHandler;
-        this.observableParameterMatchList = FXCollections.observableArrayList();
-        this.observableParameterMatchListSession = FXCollections.observableArrayList();
         this.crossSessionAudit = crossSessionAudit;
         this.crossContentTypeAudit = crossContentTypeAudit;
         this.crossScopeAudit = crossScopeAudit;
@@ -54,7 +49,6 @@ public class MatchHandler {
         List<ParameterMatch> parameterMatchEntityList = DBModel.loadAllMatchEntities().stream().toList();
         List<Integer> identifiersMatchEntities = parameterMatchEntityList.stream().map(ParameterMatch::getIdentifier).toList();
         parameterMatchStorage.putAll(combineListsIntoMatchEntityMap(identifiersMatchEntities, parameterMatchEntityList));
-        this.observableParameterMatchList.addAll(parameterMatchEntityList);
         List<MatchValue> matchValueEntityList = DBModel.loadAllMatchEntryEntities().stream().toList();
         List<Integer> identifiersMatchEntryEntities = matchValueEntityList.stream().map(MatchValue::getIdentifier).toList();
         matchValueStorage.putAll(combineListsIntoMatchEntryEntityMap(identifiersMatchEntryEntities, matchValueEntityList));
@@ -133,13 +127,11 @@ public class MatchHandler {
                 matchingUrlEntity.addFound(newParameterMatchEntity);
                 parameterMatchStorage.put(newParameterMatchEntity.getIdentifier(), newParameterMatchEntity);
                 this.matchValueStorage.put(newMatchValueEntity.getIdentifier(), newMatchValueEntity);
-                GettingStartedView.numberOfParameterMatches.setText(String.valueOf(parameterMatchStorage.size()));
-                GettingStartedView.numberOfMatchValues.setText(String.valueOf(matchValueStorage.size()));
                 // If a session is active add entities to the session and save the session and Url entity, otherwise save both ParameterMatch and Url entity
                 if (session != null) {
                     session.addMatch(newParameterMatchEntity);
                     session.addMatchValue(newMatchValueEntity);
-                    returnList.add(session);
+                    returnList.add(newParameterMatchEntity);
                     returnList.add(matchingUrlEntity);
                     SessionViewModel.sessionTable.put(this.sessionName, session);
                 } else {
@@ -150,22 +142,56 @@ public class MatchHandler {
                 ParameterMatch relatedParameterMatchEntity = getMatchEntityFromUrlEntity(name, value, url);
                 relatedParameterMatchEntity.addMatchEntryEntity(newMatchValueEntity);
                 this.matchValueStorage.put(newMatchValueEntity.getIdentifier(), newMatchValueEntity);
-                GettingStartedView.numberOfMatchValues.setText(String.valueOf(matchValueStorage.size()));
                 if (session != null) {
                     session.addMatch(relatedParameterMatchEntity);
                     session.addMatchValue(newMatchValueEntity);
-                    returnList.add(session);
+                    returnList.add(relatedParameterMatchEntity);
                     SessionViewModel.sessionTable.put(this.sessionName, session);
                 } else {
                     returnList.add(relatedParameterMatchEntity);
                 }
             }
-            this.observableParameterMatchList.add(newParameterMatchEntity);
-            if (newParameterMatchEntity.getSession().equals(sessionName)) {
-                this.observableParameterMatchListSession.add(newParameterMatchEntity);
-            }
         }
         return returnList;
+    }
+
+    class AddMatchesCallable implements Callable<List<Object>> {
+        private MatchHelperClass match;
+
+        AddMatchesCallable(MatchHelperClass match) {
+            this.match = match;
+        }
+
+        @Override
+        public List<Object> call() {
+            return addMatchToDB(match);
+        }
+    }
+
+    public List<Object> addMatchesThreaded(List<MatchHelperClass> matches) {
+        List<Future<List<Object>>> futures = new ArrayList<>();
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        for (MatchHelperClass match : matches) {
+            Future<List<Object>> future = executor.submit(new AddMatchesCallable(match));
+            futures.add(future);
+        }
+        List<Object> results = new ArrayList<>();
+        for (Future<List<Object>> future : futures) {
+            try {
+                results.addAll(future.get());
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+
+        executor.shutdown();
+
+        GettingStartedView.numberOfParameterMatches.setText(String.valueOf(parameterMatchStorage.size()));
+        GettingStartedView.numberOfMatchValues.setText(String.valueOf(matchValueStorage.size()));
+
+        this.crossSessionAudit.renderFindings();
+
+        return results;
     }
 
     public List<Object> addMatches(List<MatchHelperClass> matches) {
@@ -173,9 +199,15 @@ public class MatchHandler {
         for (MatchHelperClass match : matches) {
             returnList.addAll(addMatchToDB(match));
         }
+
+        GettingStartedView.numberOfParameterMatches.setText(String.valueOf(parameterMatchStorage.size()));
+        GettingStartedView.numberOfMatchValues.setText(String.valueOf(matchValueStorage.size()));
+
         this.crossSessionAudit.renderFindings();
+
         return returnList;
     }
+
 
     private boolean matchEntryExistsInDB(MatchValue matchValueEntity) {
         int identifier = Objects.hash(matchValueEntity.getName(), matchValueEntity.getValue(), matchValueEntity.getMatchProof(),
@@ -192,8 +224,8 @@ public class MatchHandler {
         if (hasActiveSession) {
             identifier = Objects.hash(name, value, urlEntity.getUrl(), this.sessionName);
         }
-        List<ParameterMatch> parameterMatchEntityList = urlEntity.getFound();
-        return parameterMatchEntityList.stream().map(ParameterMatch::getIdentifier).toList().contains(identifier);
+        List<ParameterMatch> parameterMatchEntityList = Collections.synchronizedList(new ArrayList<>(urlEntity.getFound()));
+        return parameterMatchEntityList.parallelStream().map(ParameterMatch::getIdentifier).toList().contains(identifier);
     }
 
     private ParameterMatch getMatchEntityFromUrlEntity(String name, String value, String url) {
@@ -205,7 +237,7 @@ public class MatchHandler {
     }
 
     public Url getMatchingUrlEntity(String url) {
-        Hashtable<Integer, Url> urlEntityStorage = parameterHandler.getUrlStorage();
+        ConcurrentHashMap<Integer, Url> urlEntityStorage = parameterHandler.getUrlStorage();
         int identifier = Objects.hash(url);
         return urlEntityStorage.get(identifier);
     }
@@ -229,7 +261,5 @@ public class MatchHandler {
     public void clearAllStorages() {
         matchValueStorage.clear();
         parameterMatchStorage.clear();
-        observableParameterMatchList.clear();
-        observableParameterMatchListSession.clear();
     }
 }

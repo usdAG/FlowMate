@@ -49,12 +49,20 @@ public class Session {
         return sessionParameter;
     }
 
-    public String getName() {
-        return name;
+    public void addMatch(ParameterMatch match) {
+        this.parameterMatchesRelatedToSession.add(match);
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void addMatchValue(MatchValue value) {
+        this.matchValuesRelatedToSession.add(value);
+    }
+
+    public void addInputValue(InputValue inputValue) {
+        this.inputValuesRelatedToSession.add(inputValue);
+    }
+
+    public String getName() {
+        return name;
     }
 
     public int getLowestHistoryId() {
@@ -73,10 +81,6 @@ public class Session {
         return identifier;
     }
 
-    public void setSessionParameter(List<SessionParameter> sessionParameter) {
-        this.sessionParameter = sessionParameter;
-    }
-
     public List<InputValue> getInputValuesRelatedToSession() {
         return inputValuesRelatedToSession;
     }
@@ -85,40 +89,24 @@ public class Session {
         this.inputValuesRelatedToSession = inputValuesRelatedToSession;
     }
 
-    public List<ParameterMatch> getParameterMatchesRelatedToSession() {
-        return parameterMatchesRelatedToSession;
-    }
-
     public void setParameterMatchesRelatedToSession(List<ParameterMatch> parameterMatchesRelatedToSession) {
         this.parameterMatchesRelatedToSession = parameterMatchesRelatedToSession;
-    }
-
-    public List<MatchValue> getMatchValuesRelatedToSession() {
-        return matchValuesRelatedToSession;
     }
 
     public void setMatchValuesRelatedToSession(List<MatchValue> matchValuesRelatedToSession) {
         this.matchValuesRelatedToSession = matchValuesRelatedToSession;
     }
 
-    public void setLowestHistoryId(int lowestHistoryId) {
-        this.lowestHistoryId = lowestHistoryId;
+    public void setSessionParameter(List<SessionParameter> sessionParameter) {
+        this.sessionParameter = sessionParameter;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public void setHighestHistoryId(int highestHistoryId) {
         this.highestHistoryId = highestHistoryId;
-    }
-
-    public void addMatch(ParameterMatch match) {
-        this.parameterMatchesRelatedToSession.add(match);
-    }
-
-    public void addMatchValue(MatchValue value) {
-        this.matchValuesRelatedToSession.add(value);
-    }
-
-    public void addInputValue(InputValue inputValue) {
-        this.inputValuesRelatedToSession.add(inputValue);
     }
 
     @Override

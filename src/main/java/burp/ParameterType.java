@@ -7,8 +7,8 @@ public enum ParameterType {
     JSON,
     OTHER;
 
-    public String getName(){
-        switch(this){
+    public String getName() {
+        switch (this) {
             case URL:
                 return "GET";
             case BODY:
@@ -21,5 +21,4 @@ public enum ParameterType {
                 return "OTHER";
         }
     }
-
 }

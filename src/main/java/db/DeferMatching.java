@@ -3,25 +3,21 @@ package db;
 import burp.BurpExtender;
 import burp.HttpResponse;
 import burp.HttpResponseParser;
-import burp.RegexMatcher;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.proxy.ProxyHttpRequestResponse;
 import db.entities.*;
 import events.DeferMatchingFinishedEvent;
 import events.DeferMatchingFinishedListener;
+import gui.ProgressDialog;
 import model.SessionViewModel;
-import net.miginfocom.swing.MigLayout;
 import utils.Hashing;
 import utils.Logger;
 
 import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 public class DeferMatching implements PropertyChangeListener {
 
@@ -29,12 +25,9 @@ public class DeferMatching implements PropertyChangeListener {
     private HttpResponseParser parser;
     private ParameterHandler pHandler;
     private MatchHandler matchHandler;
-    private JProgressBar progressBar;
-    private JDialog progressDialog;
     private MatchTask task;
-    private JTextArea taskOutput;
-    private JButton closeButton;
     private int historySize;
+    private ProgressDialog progressDialog;
     private List<DeferMatchingFinishedListener> listeners;
 
     public DeferMatching(MontoyaApi api, HttpResponseParser parser, ParameterHandler pHandler, MatchHandler mHandler) {
@@ -49,36 +42,11 @@ public class DeferMatching implements PropertyChangeListener {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                historySize = api.proxy().history().size() - BurpExtender.historyStart;
-                progressDialog = new JDialog((Frame) null, "Matching Parameters...", true);
-                progressDialog.setResizable(false);
-                progressDialog.getContentPane().setLayout(new MigLayout("fill"));
-                progressDialog.setLocationRelativeTo(null);
-                progressBar = new JProgressBar(JProgressBar.HORIZONTAL);
-                progressBar.setMinimum(0);
-                progressBar.setMaximum(100);
-                progressBar.setSize(280, 20);
-                progressBar.setStringPainted(true);
-                taskOutput = new JTextArea();
-                taskOutput.setMargin(new Insets(5,5,5,5));
-                taskOutput.setEditable(false);
-                closeButton = new JButton("Close");
-                closeButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent actionEvent) {
-                        progressDialog.setVisible(false);
-                    }
-                });
-                progressDialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-                progressDialog.setMinimumSize(new Dimension(300, 150));
-                progressDialog.setResizable(false);
-                progressDialog.add(new JLabel("Progress..."), "north");
-                progressDialog.add(new JScrollPane(taskOutput), "dock center, grow");
-                progressDialog.add(closeButton, "south");
-                progressDialog.add(progressBar,"south");
-                progressDialog.setVisible(true);
+                progressDialog = new ProgressDialog("Matching Parameters...");
+                progressDialog.init();
             }
         });
+        historySize = api.proxy().history().size() - BurpExtender.historyStart;
         task = new MatchTask();
         task.addPropertyChangeListener(this);
         task.execute();
@@ -89,8 +57,8 @@ public class DeferMatching implements PropertyChangeListener {
         if ("progress".equals(evt.getPropertyName())) {
             int progress = (Integer) evt.getNewValue();
             double historyProgress = (((double) progress * historySize / 100) - 1);
-            progressBar.setValue(progress);
-            taskOutput.append(String.format(
+            progressDialog.updateProgressBarValue(progress);
+            progressDialog.appendTaskOutput(String.format(
                     "Completed %d/%d of Burp history.\n", (int) historyProgress, historySize));
         }
     }
@@ -110,17 +78,16 @@ public class DeferMatching implements PropertyChangeListener {
         }
     }
 
-    class MatchTask extends SwingWorker<Void, Void> {
+    class MatchTask extends SwingWorker<Void, String> {
 
         @Override
         protected Void doInBackground() {
             try {
                 int historySize = api.proxy().history().size();
                 var proxyList = api.proxy().history().subList(BurpExtender.historyStart, historySize);
-                List<InputParameter> allInputParameters = pHandler.observableInputParameterList;
+                List<InputParameter> allInputParameters = pHandler.allInputParametersList;
                 List<Object> allMatches = new ArrayList<>();
                 Set<Integer> duplicateIdentifiers = new HashSet<>();
-                Set<String> messageHashes = new HashSet<>();
                 List<InputParameter> inputParametersMatchingToHistory = new ArrayList<>();
                 Set<Integer> inputParamIdentifiers = new HashSet<>();
 
@@ -159,9 +126,12 @@ public class DeferMatching implements PropertyChangeListener {
                     progress = (int) ((i + 1) / (double) listSize * 100);
                     setProgress(progress);
 
-                    HttpResponse response = parser.parseResponse(proxyResponse.originalResponse(), proxyResponse.finalRequest());
+                    burp.api.montoya.http.message.responses.HttpResponse originalResponse = proxyResponse.originalResponse();
+                    if (originalResponse == null) {
+                        continue;
+                    }
+                    HttpResponse response = parser.parseResponse(originalResponse, proxyResponse.finalRequest());
                     String hash = Hashing.sha1(proxyResponse.finalRequest().toByteArray().getBytes());
-                    messageHashes.add(hash);
 
                     for (InputParameter parameter : allInputParameters) {
                         InputParameter realParam = new InputParameter(parameter.getName(), parameter.getType(), parameter.getDomain());
@@ -171,7 +141,7 @@ public class DeferMatching implements PropertyChangeListener {
                         }
                         for (InputValue value : parameter.getOccurrenceEntities()) {
                             if (hash.equals(value.getMessageHash())) {
-                                realParam.addOccurence(value);
+                                realParam.addOccurrence(value);
                             }
                         }
                         if (realParam.getOccurrenceEntities().isEmpty()) {
@@ -184,7 +154,7 @@ public class DeferMatching implements PropertyChangeListener {
                         }
                     }
                     List<MatchHelperClass> respMatch = parser.getMatches(response, inputParametersMatchingToHistory, hash);
-                    List<Object> realMatches = matchHandler.addMatches(respMatch);
+                    List<Object> realMatches = matchHandler.addMatchesThreaded(respMatch);
                     for (Object realMatch : realMatches) {
                         int identifier = -1;
 
@@ -202,7 +172,7 @@ public class DeferMatching implements PropertyChangeListener {
                         }
                     }
                 }
-                taskOutput.append("Saving Entities in Database...\n");
+                publish("Saving Entities in Database...\n");
                 DBModel.saveBulk(allMatches);
                 if (matchHandler.isSessionActive())
                     matchHandler.setSessionName(currentSessionName);
@@ -229,10 +199,15 @@ public class DeferMatching implements PropertyChangeListener {
         }
 
         @Override
+        protected void process(List<String> chunks) {
+            progressDialog.appendTaskOutput("Saving Entities in Database...\n");
+        }
+
+        @Override
         protected void done() {
-            progressDialog.setDefaultCloseOperation(JDialog.HIDE_ON_CLOSE);
-            progressBar.setValue(100);
-            taskOutput.setText("Completed!\n");
+            progressDialog.updateDialogDefaultCloseOperation(JDialog.HIDE_ON_CLOSE);
+            progressDialog.updateProgressBarValue(100);
+            progressDialog.setTaskOutputText("Completed!\n");
             fireDeferMatchingFinishedEvent();
         }
     }

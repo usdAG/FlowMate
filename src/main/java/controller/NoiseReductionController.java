@@ -38,45 +38,15 @@ public class NoiseReductionController implements ActionListener, ListSelectionLi
     @Override
     public void actionPerformed(ActionEvent actionEvent) {
         if (actionEvent.getSource().equals(view.newRuleButton)) {
-            this.isEditing = false;
-            view.ruleList.getSelectionModel().clearSelection();
-            view.nameTextField.requestFocus();
-            clearAllTextFields();
-            clearAllCheckBoxes();
-            view.editorPanel.setBorder(BorderFactory.createTitledBorder("Rule editor - *Adding new rule*"));
+           setEditorInNewRuleMode();
         } else if (actionEvent.getSource().equals(view.saveButton)) {
-            RuleContainer rule = getSelectedValuesFromView();
-            view.regexInvalidLabel.setVisible(false);
-            if (!isRegexValid(rule.getRegex())) {
-                view.regexInvalidLabel.setVisible(true);
-                return;
-            }
-            if (isEditing) {
-                saveEditedRule(rule.getName(), rule.getRegex(), rule.affectsParameterNames(), rule.affectsParameterValues(),
-                        rule.affectsQueryString(), rule.affectsBody(), rule.affectsCookie(), rule.isActive(), rule.isCaseInsensitive());
-            } else {
-                saveNewRule(rule.getName(), rule.getRegex(), rule.affectsParameterNames(), rule.affectsParameterValues(),
-                        rule.affectsQueryString(), rule.affectsBody(), rule.affectsCookie(), rule.isActive(), rule.isCaseInsensitive());
-            }
+            saveEditorContent();
         } else if (actionEvent.getSource().equals(view.deleteButton)) {
-            int index = view.ruleList.getSelectedIndex();
-            if (index != -1) {
-                DefaultListModel<RuleContainer> listModel = (DefaultListModel<RuleContainer>) view.ruleList.getModel();
-                RuleContainer selectedRuleContainer = view.ruleList.getSelectedValue();
-                listModel.removeElement(selectedRuleContainer);
-                model.deleteRuleInState(selectedRuleContainer);
-                fireRuleContainerChanged(selectedRuleContainer, true);
-                clearAllTextFields();
-                clearAllCheckBoxes();
-            }
+            deleteSelectedRule();
         } else if (actionEvent.getSource().equals(view.activatedCheckBox)) {
-            if (isEditing) {
-                RuleContainer rule = getSelectedValuesFromView();
-                updateActiveStatus(rule.isActive());
-            }
+            changeActivatedStatus();
         } else if (actionEvent.getSource().equals(view.purgeAndRematchButton)) {
-            model.purgeDbAndStartRematch();
-            auditFindingView.clearDataAndFields();
+            purgeAndRematch();
         }
     }
 
@@ -112,6 +82,56 @@ public class NoiseReductionController implements ActionListener, ListSelectionLi
         view.bodyCheckBox.setSelected(false);
         view.cookieCheckBox.setSelected(false);
         view.activatedCheckBox.setSelected(false);
+    }
+
+    private void setEditorInNewRuleMode() {
+        this.isEditing = false;
+        view.ruleList.getSelectionModel().clearSelection();
+        view.nameTextField.requestFocus();
+        clearAllTextFields();
+        clearAllCheckBoxes();
+        view.editorPanel.setBorder(BorderFactory.createTitledBorder("Rule editor - *Adding new rule*"));
+    }
+
+    private void saveEditorContent() {
+        RuleContainer rule = getSelectedValuesFromView();
+        view.regexInvalidLabel.setVisible(false);
+        if (!isRegexValid(rule.getRegex())) {
+            view.regexInvalidLabel.setVisible(true);
+            return;
+        }
+        if (isEditing) {
+            saveEditedRule(rule.getName(), rule.getRegex(), rule.affectsParameterNames(), rule.affectsParameterValues(),
+                    rule.affectsQueryString(), rule.affectsBody(), rule.affectsCookie(), rule.isActive(), rule.isCaseInsensitive());
+        } else {
+            saveNewRule(rule.getName(), rule.getRegex(), rule.affectsParameterNames(), rule.affectsParameterValues(),
+                    rule.affectsQueryString(), rule.affectsBody(), rule.affectsCookie(), rule.isActive(), rule.isCaseInsensitive());
+        }
+    }
+
+    private void deleteSelectedRule() {
+        int index = view.ruleList.getSelectedIndex();
+        if (index != -1) {
+            DefaultListModel<RuleContainer> listModel = (DefaultListModel<RuleContainer>) view.ruleList.getModel();
+            RuleContainer selectedRuleContainer = view.ruleList.getSelectedValue();
+            listModel.removeElement(selectedRuleContainer);
+            model.deleteRuleInState(selectedRuleContainer);
+            fireRuleContainerChanged(selectedRuleContainer, true);
+            clearAllTextFields();
+            clearAllCheckBoxes();
+        }
+    }
+
+    private void changeActivatedStatus() {
+        if (isEditing) {
+            RuleContainer rule = getSelectedValuesFromView();
+            updateActiveStatus(rule.isActive());
+        }
+    }
+
+    private void purgeAndRematch() {
+        model.purgeDbAndStartRematch();
+        auditFindingView.clearDataAndFields();
     }
 
     private void setValuesInEditor() {
@@ -168,7 +188,12 @@ public class NoiseReductionController implements ActionListener, ListSelectionLi
         int index = view.ruleList.getSelectedIndex();
         if (ruleContainer != null && index != -1) {
             String oldRuleHash = String.valueOf(ruleContainer.getHash());
+            // Deactivate the old rule and apply deactivation
+            ruleContainer.setActive(false);
+            fireRuleContainerChanged(ruleContainer, false);
+            // Set properties of new rule
             ruleContainer.updateValues(name, regex, affectsParamName, affectsParamValue, affectsHeader, affectsBody, affectsCookie, active, caseInsensitive);
+            // Apply changes
             model.updateRuleInState(ruleContainer, oldRuleHash);
             updateListPanel();
             fireRuleContainerChanged(ruleContainer, false);

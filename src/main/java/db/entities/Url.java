@@ -44,19 +44,19 @@ public class Url {
         this.identifier = Objects.hash(url);
     }
 
+    public void addParameterFoundInUrl(InputParameter inputParameterEntity) {
+        this.foundInInputParameterList.add(inputParameterEntity);
+    }
+    public void addFound(ParameterMatch foundParameterMatchEntity) {
+        found.add(foundParameterMatchEntity);
+    }
+
     public List<ParameterMatch> getFound() {
         return found;
     }
 
     public List<InputParameter> getFoundInParameterList() {
         return foundInInputParameterList;
-    }
-
-    public void addParameterFoundInUrl(InputParameter inputParameterEntity) {
-        this.foundInInputParameterList.add(inputParameterEntity);
-    }
-    public void addFound(ParameterMatch foundParameterMatchEntity) {
-        found.add(foundParameterMatchEntity);
     }
 
     public int getIdentifier(){

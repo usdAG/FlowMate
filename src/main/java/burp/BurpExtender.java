@@ -48,6 +48,7 @@ public class BurpExtender implements BurpExtension  {
     private RegexMatcher regexMatcher;
     private DeferMatching deferMatching;
     private HttpListener listener;
+    private RetroactiveParser retroactiveParser;
     private MontoyaApi api;
 
     public Neo4JDB neo4j;
@@ -93,8 +94,11 @@ public class BurpExtender implements BurpExtension  {
         queryView = new QueryView(this.listener.parameterHandler, this.listener.matchHandler, this.api);
         queryViewModel = new QueryViewModel();
         queryViewController = new QueryViewController(api, queryView, queryViewModel, this.listener.parameterHandler, this.listener.matchHandler, sessionViewController);
+        this.retroactiveParser = new RetroactiveParser(this.api, this.listener.parameterHandler, this.queryViewController);
         gettingStartedView = new GettingStartedView(this.api, this.propertiesHandler, this.deferMatching, this.listener.parameterHandler,
-                this.listener.matchHandler, this.noiseReductionController, this.queryViewController, this.auditFindingView, this.sessionViewController);
+                this.listener.matchHandler, this.noiseReductionController, this.queryViewController, this.auditFindingView, this.sessionViewController, this.retroactiveParser);
+
+        this.api.userInterface().registerContextMenuItemsProvider(new HistoryContextMenu(this.api, gettingStartedView));
 
         if (this.propertiesHandler.isFirstTimeLoading) {
             historyStart = this.api.proxy().history().size() + 1;
@@ -105,6 +109,8 @@ public class BurpExtender implements BurpExtension  {
 
         noiseReductionController.addRuleContainerListener(queryViewController);
         deferMatching.addDeferMatchingFinishedListener(sessionViewController);
+        deferMatching.addDeferMatchingFinishedListener(queryViewController);
+        listener.addItemsAddedListener(queryViewController);
 
         api.extension().registerUnloadingHandler(new MyExtensionUnloadHandler());
 

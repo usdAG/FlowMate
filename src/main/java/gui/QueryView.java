@@ -17,6 +17,7 @@ import gui.renderer.ParameterMatchListCellRenderer;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
+import javax.swing.text.DefaultCaret;
 import java.awt.*;
 
 public class QueryView extends JScrollPane {
@@ -128,7 +129,7 @@ public class QueryView extends JScrollPane {
     private JPanel initParameterList() {
         JPanel parameterListPanel = new JPanel(new MigLayout());
         JLabel parameterListLabel = new JLabel("List of Parameters:");
-        this.parameterJList = new JList<>(containerConverter.parameterToContainer(this.parameterHandler.observableInputParameterList.stream().toList()));
+        this.parameterJList = new JList<>(containerConverter.parameterToContainer(this.parameterHandler.inputParameterStorage.values().stream().toList()));
         this.parameterJList.setCellRenderer(new ParameterListCellRenderer());
         this.parameterScrollPane = new JScrollPane(parameterJList);
 
@@ -191,6 +192,8 @@ public class QueryView extends JScrollPane {
     // JEditorPane because JLabels are somehow unable to render HTML
     private JEditorPane initSelectedMessageIdLabel() {
         selectedMessageId = new JEditorPane();
+        DefaultCaret caret = (DefaultCaret)selectedMessageId.getCaret();
+        caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
         selectedMessageId.setContentType("text/html");
         selectedMessageId.setEditable(false);
         selectedMessageId.setOpaque(true);

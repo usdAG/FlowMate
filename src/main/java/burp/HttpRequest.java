@@ -11,10 +11,10 @@ public class HttpRequest {
     public URL Url;
     public Collection<ParameterHelperClass> parameterHelpers;
 
-    public HttpRequest(String method, URL url, Collection<ParameterHelperClass> oldParameters){
+    public HttpRequest(String method, URL url, Collection<ParameterHelperClass> parsedParameterHelper){
         this.Method = method;
         this.Url = url;
-        this.parameterHelpers = oldParameters;
+        this.parameterHelpers = parsedParameterHelper;
     }
 
     @Override
