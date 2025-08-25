@@ -170,7 +170,6 @@ public class BurpExtender implements BurpExtension  {
                 api.userInterface().registerSuiteTab("FlowMate", tabbedPane);
             }
         });
-
         Logger.getInstance().logToOutput("FlowMate started and ready!");
     }
 

@@ -16,10 +16,13 @@ import gui.container.*;
 import javafx.collections.ListChangeListener;
 import model.QueryViewModel;
 import utils.MessageHashToProxyId;
+import utils.Logger;
 
 import javax.swing.*;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
@@ -28,6 +31,8 @@ import java.util.List;
 import java.util.Vector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import javax.swing.event.DocumentEvent;
 
 public class QueryViewController implements ActionListener, ListSelectionListener, RuleContainerListener {
 
@@ -55,7 +60,7 @@ public class QueryViewController implements ActionListener, ListSelectionListene
     }
 
     private void registerEventHandler() {
-        view.searchField.addTextListener(new SearchFieldTextListener());
+        view.searchField.getDocument().addDocumentListener(new SearchFieldDocumentListener()); 
         view.sortByLabel.addActionListener(this);
         view.filterPicker.addActionListener(this);
         view.hideExcludedParamsCheckBox.addActionListener(this);
@@ -332,26 +337,25 @@ public class QueryViewController implements ActionListener, ListSelectionListene
         updateParameters();
     }
 
-    private class SearchFieldTextListener implements TextListener {
+    private class SearchFieldDocumentListener implements DocumentListener {
 
         private String oldValue = "";
 
-        @Override
-        public void textValueChanged(TextEvent event) {
-            view.hideExcludedParamsCheckBox.setEnabled(false);
-            var newValue = ((TextField)event.getSource()).getText();
-            if (newValue == null | newValue.isEmpty()) {
+        
+        private void textChanged(String newText) {
+            view.hideExcludedParamsCheckBox.setEnabled(false);            
+            if (newText == null | newText.isEmpty()) {
                 //Show all as no value entered
                 view.parameterJList.setListData(new Vector<>(filterExcludedParams(containerConverter.parameterToContainer(view.parameterHandler.observableInputParameterList.stream().toList()))));
                 filterParameterList();
                 view.hideExcludedParamsCheckBox.setEnabled(true);
             }
-            else if (newValue.length() > oldValue.length()) {
+            else if (newText.length() > oldValue.length()) {
                 var newParams = new Vector<ParameterContainer>();
                 var model = view.parameterJList.getModel();
                 List<ParameterContainer> toBeSorted = filterExcludedParams(IntStream.range(0,model.getSize()).mapToObj(model::getElementAt).collect(Collectors.toList()));
                 for (var paramContainer : toBeSorted) {
-                    if (paramContainer.getName().contains(newValue)) {
+                    if (paramContainer.getName().contains(newText)) {
                         newParams.add(paramContainer);
                     }
                 }
@@ -361,16 +365,37 @@ public class QueryViewController implements ActionListener, ListSelectionListene
                 var newParams = new Vector<ParameterContainer>();
                 var currentParams = filterExcludedParams(containerConverter.parameterToContainer(view.parameterHandler.observableInputParameterList.stream().toList()));
                 for (var paramContainer : currentParams) {
-                    if (paramContainer.getName().contains(newValue)) {
+                    if (paramContainer.getName().contains(newText)) {
                         newParams.add(paramContainer);
                     }
                 }
                 view.parameterJList.setListData(newParams);
 
             }
-            this.oldValue = newValue;
+            this.oldValue = newText;
             view.parameterJList.revalidate();
             view.parameterJList.repaint();
+        }
+
+        @Override
+        public void insertUpdate(DocumentEvent de) {
+            try{
+                String text = de.getDocument().getText(0, de.getDocument().getLength());
+                this.textChanged(text);
+            }
+            catch(Exception ex){
+                Logger.getInstance().logToError(ex.getMessage());
+            }            
+        }
+
+        @Override
+        public void removeUpdate(DocumentEvent de) {
+            insertUpdate(de);
+        }
+
+        @Override
+        public void changedUpdate(DocumentEvent de) {
+            insertUpdate(de);
         }
 
     }

@@ -22,7 +22,7 @@ import java.awt.*;
 public class QueryView extends JScrollPane {
 
     private JPanel panel;
-    public TextField searchField;
+    public JTextField searchField;
     private JScrollPane parameterScrollPane;
     public JList<ParameterContainer> parameterJList;
     private JScrollPane parameterValueScrollpane;
@@ -66,8 +66,8 @@ public class QueryView extends JScrollPane {
         leftPanel.setBorder(BorderFactory.createTitledBorder("Parameters"));
         leftPanel.setMaximumSize(new Dimension(400, 1000));
 
-        this.searchField = new TextField();
-        this.searchField.setMinimumSize(new Dimension(157, 20));
+        this.searchField = new JTextField();        
+        this.searchField.setMinimumSize(new Dimension(157, 20));        
 
         this.rightMidPanel = new JPanel(new MigLayout());
 
